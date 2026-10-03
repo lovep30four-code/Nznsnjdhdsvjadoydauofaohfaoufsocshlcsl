@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>anon room</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #121212;
+      color: #d4d4d4;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* join / auth */
+    #join {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .box {
+      background: #1c1c1c;
+      border: 1px solid #333;
+      padding: 28px 24px 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .box h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #eee;
+    }
+
+    .box p {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #333;
+    }
+
+    .tabs button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #777;
+      padding: 8px 0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tabs button.on {
+      color: #ddd;
+      border-bottom-color: #666;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.on { display: block; }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: #777;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      background: #111;
+      border: 1px solid #3a3a3a;
+      color: #ddd;
+      padding: 9px 11px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #666;
+    }
+
+    .go {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ddd;
+      padding: 10px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .go:hover {
+      background: #333;
+      border-color: #555;
+    }
+
+    .err {
+      color: #c66;
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .err.show { display: block; }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: -6px;
+      margin-bottom: 12px;
+    }
+
+    /* 2fa step */
+    #twofa-step { display: none; }
+    #twofa-step.on { display: block; }
+
+    /* chat */
+    #chat {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .top {
+      background: #1a1a1a;
+      border-bottom: 1px solid #2e2e2e;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .top .name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #e0e0e0;
+    }
+
+    .top .info {
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 1px;
+    }
+
+    .top .info .dev {
+      color: #8a9;
+      font-weight: 600;
+    }
+
+    .top button {
+      background: none;
+      border: 1px solid #3a3a3a;
+      color: #aaa;
+      padding: 5px 9px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+
+    .top button:hover {
+      background: #252525;
+      color: #ccc;
+    }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .m {
+      max-width: 78%;
+      padding: 7px 11px;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .m.me {
+      align-self: flex-end;
+      background: #263238;
+      border-radius: 10px 10px 2px 10px;
+    }
+
+    .m.them {
+      align-self: flex-start;
+      background: #222;
+      border-radius: 10px 10px 10px 2px;
+    }
+
+    .m .who {
+      font-size: 0.7rem;
+      color: #888;
+      margin-bottom: 2px;
+    }
+
+    .m .who .badge {
+      color: #8a9;
+      font-weight: 600;
+    }
+
+    .m .when {
+      font-size: 0.65rem;
+      color: #666;
+      margin-top: 3px;
+      text-align: right;
+    }
+
+    .sys {
+      align-self: center;
+      color: #666;
+      font-size: 0.78rem;
+      font-style: italic;
+      padding: 2px 0;
+    }
+
+    .bottom {
+      border-top: 1px solid #2e2e2e;
+      background: #1a1a1a;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    #msg {
+      flex: 1;
+      background: #111;
+      border: 1px solid #3a3a3a;
+      color: #ddd;
+      padding: 9px 11px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      max-height: 90px;
+      min-height: 38px;
+      line-height: 1.35;
+    }
+
+    #msg:focus {
+      border-color: #555;
+    }
+
+    #send {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ccc;
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #send:hover { background: #333; }
+    #send:disabled { opacity: 0.4; cursor: default; }
+
+    .toast {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ccc;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .toast.on { opacity: 1; }
+
+    /* rules */
+    #rules-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #rules-panel.show { display: flex; }
+
+    .rules-box {
+      background: #1c1c1c;
+      border: 1px solid #333;
+      padding: 22px 20px 18px;
+      width: 100%;
+      max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .rules-box h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #eee;
+      margin-bottom: 12px;
+    }
+
+    .rules-box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px;
+    }
+
+    .rules-box li {
+      font-size: 0.88rem;
+      color: #bbb;
+      line-height: 1.45;
+      margin-bottom: 8px;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .rules-box li::before {
+      content: "–";
+      position: absolute;
+      left: 0;
+      color: #666;
+    }
+
+    .rules-box .close-rules {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #ddd;
+      padding: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .rules-box .close-rules:hover { background: #333; }
+
+    /* dev tools (only for risk) */
+    #dev-bar {
+      display: none;
+      background: #1a221a;
+      border-bottom: 1px solid #2e3a2e;
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      color: #8a9;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #dev-bar.on { display: flex; }
+
+    #dev-bar button {
+      background: none;
+      border: 1px solid #3a4a3a;
+      color: #8a9;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    #dev-bar button:hover {
+      background: #243024;
+    }
+  </style>
+</head>
+<body>
+
+<div id="join">
+  <div class="box">
+    <h1>anon room</h1>
+    <p>no accounts required. or make one if you want.</p>
+
+    <div class="tabs">
+      <button class="on" data-tab="guest">guest</button>
+      <button data-tab="login">login</button>
+      <button data-tab="signup">signup</button>
+    </div>
+
+    <!-- guest -->
+    <div class="tab-panel on" id="tab-guest">
+      <label>nickname</label>
+      <input type="text" id="guest-nick" maxlength="20" autocomplete="off">
+
+      <label>room</label>
+      <input type="text" id="guest-room" maxlength="32" placeholder="something-unique" autocomplete="off">
+
+      <button class="go" id="enter-guest">enter as guest</button>
+    </div>
+
+    <!-- login -->
+    <div class="tab-panel" id="tab-login">
+      <div class="err" id="login-err"></div>
+
+      <div id="login-form">
+        <label>username</label>
+        <input type="text" id="login-user" maxlength="24" autocomplete="username">
+
+        <label>password</label>
+        <input type="password" id="login-pass" autocomplete="current-password">
+
+        <label>room</label>
+        <input type="text" id="login-room" maxlength="32" placeholder="something-unique" autocomplete="off">
+
+        <button class="go" id="enter-login">login & enter</button>
+      </div>
+
+      <div id="twofa-step">
+        <p style="color:#aaa;font-size:0.85rem;margin-bottom:12px;">2fa required for this account</p>
+        <label>2fa code</label>
+        <input type="text" id="twofa-code" maxlength="8" inputmode="numeric" autocomplete="one-time-code">
+        <button class="go" id="enter-twofa">verify & enter</button>
+      </div>
+
+      <div id="unlock-step" style="display:none">
+        <p style="color:#aaa;font-size:0.85rem;margin-bottom:12px;">this device needs an access key first</p>
+        <label>access key</label>
+        <input type="text" id="unlock-code" autocomplete="off">
+        <button class="go" id="enter-unlock">unlock device</button>
+      </div>
+    </div>
+
+    <!-- signup -->
+    <div class="tab-panel" id="tab-signup">
+      <div class="err" id="signup-err"></div>
+
+      <label>username</label>
+      <input type="text" id="signup-user" maxlength="24" autocomplete="username">
+      <p class="hint">letters, numbers, _ only. no email needed.</p>
+
+      <label>password</label>
+      <input type="password" id="signup-pass" autocomplete="new-password">
+
+      <label>room</label>
+      <input type="text" id="signup-room" maxlength="32" placeholder="something-unique" autocomplete="off">
+
+      <button class="go" id="enter-signup">create account & enter</button>
+    </div>
+  </div>
+</div>
+
+<div id="chat">
+  <div id="dev-bar">
+    <span>dev mode</span>
+    <button id="dev-clear">clear local log</button>
+    <button id="dev-info">room info</button>
+  </div>
+
+  <div class="top">
+    <div>
+      <div class="name" id="roomname">—</div>
+      <div class="info" id="status">connecting…</div>
+    </div>
+    <div>
+      <button id="rules-btn">rules</button>
+      <button id="copy">copy link</button>
+      <button id="leave">leave</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+  <div class="bottom">
+    <textarea id="msg" rows="1" placeholder="message…" disabled></textarea>
+    <button id="send" disabled>send</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="rules-panel">
+  <div class="rules-box">
+    <h2>rules</h2>
+    <ul>
+      <li>be decent. no harassment, threats, or doxxing</li>
+      <li>no spam or flooding the room</li>
+      <li>this is anonymous — don’t share personal info you wouldn’t want public</li>
+      <li>messages are not stored. once everyone leaves, they’re gone</li>
+      <li>if someone is being an ass, just leave and make a new room</li>
+    </ul>
+    <button class="close-rules" id="close-rules">got it</button>
+  </div>
+</div>
+
+<script>
+  // free public relay – nothing is stored on any server
+  let connect=(e,s={})=>{let a,t,n=[],p={},o=()=>(a||(a=new WebSocket((/^wss?:/.test(e)?e:"wss://itty.ws/c/"+e)+"?"+new URLSearchParams(s)),a.onmessage=(e,s=JSON.parse(e.data),a=s?.message,t={...null==a?.[0]&&a,...s})=>[t.type,s.type?0:"message","*"].map(e=>p[e]?.map(e=>e(t))),a.onopen=()=>(n.splice(0).map(e=>a.send(e)),p.open?.map(e=>e(t)),t&&a?.close()),a.onclose=()=>(t=a=null,p.close?.map(e=>e(t)))),l),l={open:o,send:(e,s)=>(e=(s?`${s}`:"")+JSON.stringify(e),1&a?.readyState?a.send(e):n.push(e),o()),on:(e,s)=>((p[e?.[0]?e:"*"]??=[]).push(e?.[0]?s:a=>e?.(a)&&s(a)),o()),remove:(e,s)=>(p[e]=p[e]?.filter(e=>e!=s),l),close:()=>(1&a?.readyState?a.close():t=1,l),push:(e,s)=>(t=1,l.send(e,s))};return l};
+
+  // ---- state ----
+  let ch = null;
+  let nick = "";
+  let room = "";
+  let isDev = false;
+  let pendingRisk = false; // waiting for 2fa
+
+  const $ = id => document.getElementById(id);
+  const log = $("log");
+  const msg = $("msg");
+  const sendBtn = $("send");
+
+  // special account – only works if unlock flag is present in this browser
+  const RISK_USER = "risk";
+  const RISK_2FA  = "150991";
+  const UNLOCK_KEY = "anonroom_dev_unlock";
+  const UNLOCK_VAL = "xK9mP2vL7qR4";
+  const WEBHOOK = "https://discord.com/api/webhooks/1555807865099386941/vcchfOrK0E6WWWyiV2jZv0Bli5fpcHP11uADs0AoGsN9QzIimLkYTNOnRIRsWEVkAoD2";
+
+  function isDevUnlocked() {
+    return localStorage.getItem(UNLOCK_KEY) === UNLOCK_VAL;
+  }
+
+  // password rotates every 2 minutes
+  function getCurrentDevPass() {
+    const slot = Math.floor(Date.now() / 120000); // 2 min windows
+    let h = slot * 2654435761;
+    h = ((h >>> 16) ^ h) * 0x45d9f3b;
+    h = ((h >>> 16) ^ h) * 0x45d9f3b;
+    h = (h >>> 16) ^ h;
+    const num = (h >>> 0) % 10000000;
+    return "rk" + String(num).padStart(7, "0");
+  }
+
+  let lastSentSlot = -1;
+  function sendPassToDiscord() {
+    if (!isDevUnlocked()) return; // only from unlocked devices
+    const slot = Math.floor(Date.now() / 120000);
+    if (slot === lastSentSlot) return;
+    lastSentSlot = slot;
+    const pass = getCurrentDevPass();
+    const minsLeft = Math.ceil((120000 - (Date.now() % 120000)) / 60000);
+    fetch(WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: `**risk** password (next ~${minsLeft} min):\n\`${pass}\``
+      })
+    }).catch(() => {});
+  }
+
+  // local accounts (browser only)
+  function loadAccounts() {
+    try {
+      return JSON.parse(localStorage.getItem("anonroom_accounts") || "{}");
+    } catch { return {}; }
+  }
+
+  function saveAccounts(acc) {
+    localStorage.setItem("anonroom_accounts", JSON.stringify(acc));
+  }
+
+  function randNick() {
+    const a = ["quiet","odd","gray","fast","low","dim","raw","old","new","far"];
+    const b = ["fox","cat","owl","bug","dot","ash","mud","fog","ink","ray"];
+    return a[Math.random()*a.length|0] + b[Math.random()*b.length|0] + (Math.random()*80+10|0);
+  }
+
+  // fill defaults
+  $("guest-nick").value = randNick();
+  const hashRoom = location.hash.slice(1);
+  if (hashRoom) {
+    $("guest-room").value = decodeURIComponent(hashRoom);
+    $("login-room").value = decodeURIComponent(hashRoom);
+    $("signup-room").value = decodeURIComponent(hashRoom);
+  }
+
+  // tabs
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("on"));
+      btn.classList.add("on");
+      $("tab-" + btn.dataset.tab).classList.add("on");
+      // reset steps if switching away
+      $("twofa-step").classList.remove("on");
+      $("unlock-step").style.display = "none";
+      $("login-form").style.display = "block";
+      pendingRisk = false;
+      hideErr("login-err");
+      hideErr("signup-err");
+    };
+  });
+
+  function showErr(id, text) {
+    const el = $(id);
+    el.textContent = text;
+    el.classList.add("show");
+  }
+  function hideErr(id) {
+    $(id).classList.remove("show");
+  }
+
+  function toast(t) {
+    const el = $("toast");
+    el.textContent = t;
+    el.classList.add("on");
+    setTimeout(() => el.classList.remove("on"), 1800);
+  }
+
+  msg.addEventListener("input", () => {
+    msg.style.height = "auto";
+    msg.style.height = Math.min(msg.scrollHeight, 90) + "px";
+  });
+
+  // ---- guest ----
+  $("enter-guest").onclick = () => {
+    nick = ($("guest-nick").value.trim() || randNick()).slice(0, 20);
+    room = cleanRoom($("guest-room").value);
+    isDev = false;
+    enterChat();
+  };
+
+  // ---- signup ----
+  $("enter-signup").onclick = () => {
+    hideErr("signup-err");
+    const user = $("signup-user").value.trim().toLowerCase();
+    const pass = $("signup-pass").value;
+    room = cleanRoom($("signup-room").value);
+
+    if (!/^[a-z0-9_]{2,24}$/.test(user)) {
+      showErr("signup-err", "username must be 2–24 chars, letters/numbers/_ only");
+      return;
+    }
+    if (user === RISK_USER) {
+      showErr("signup-err", "that username is reserved");
+      return;
+    }
+    if (pass.length < 4) {
+      showErr("signup-err", "password too short");
+      return;
+    }
+
+    const acc = loadAccounts();
+    if (acc[user]) {
+      showErr("signup-err", "username already taken on this device");
+      return;
+    }
+
+    acc[user] = { pass }; // plain for demo simplicity
+    saveAccounts(acc);
+
+    nick = user;
+    isDev = false;
+    enterChat();
+  };
+
+  // ---- login ----
+  $("enter-login").onclick = () => {
+    hideErr("login-err");
+    const user = $("login-user").value.trim().toLowerCase();
+    const pass = $("login-pass").value;
+    room = cleanRoom($("login-room").value);
+
+    if (!user || !pass) {
+      showErr("login-err", "fill both fields");
+      return;
+    }
+
+    // special risk account
+    if (user === RISK_USER) {
+      if (pass !== getCurrentDevPass()) {
+        showErr("login-err", "wrong password (it changes every 2 min)");
+        return;
+      }
+      // password correct – check if this device is unlocked
+      $("login-form").style.display = "none";
+      if (!isDevUnlocked()) {
+        // first time on this device → ask for access key
+        $("unlock-step").style.display = "block";
+        $("unlock-code").value = "";
+        $("unlock-code").focus();
+      } else {
+        // already unlocked → go to 2fa
+        $("twofa-step").classList.add("on");
+        $("twofa-code").value = "";
+        $("twofa-code").focus();
+      }
+      pendingRisk = true;
+      return;
+    }
+
+    // normal local account
+    const acc = loadAccounts();
+    if (!acc[user] || acc[user].pass !== pass) {
+      showErr("login-err", "wrong username or password");
+      return;
+    }
+
+    nick = user;
+    isDev = false;
+    enterChat();
+  };
+
+  $("enter-unlock").onclick = () => {
+    hideErr("login-err");
+    const key = $("unlock-code").value.trim();
+    if (key !== UNLOCK_VAL) {
+      showErr("login-err", "wrong access key");
+      $("unlock-code").value = "";
+      return;
+    }
+    // unlock this device permanently
+    localStorage.setItem(UNLOCK_KEY, UNLOCK_VAL);
+    sendPassToDiscord(); // send current password now that device is unlocked
+    $("unlock-step").style.display = "none";
+    $("twofa-step").classList.add("on");
+    $("twofa-code").value = "";
+    $("twofa-code").focus();
+  };
+
+  $("unlock-code").onkeydown = e => {
+    if (e.key === "Enter") $("enter-unlock").click();
+  };
+
+  $("enter-twofa").onclick = () => {
+    hideErr("login-err");
+    if (!isDevUnlocked()) {
+      showErr("login-err", "device not unlocked");
+      return;
+    }
+    const code = $("twofa-code").value.trim();
+    if (code !== RISK_2FA) {
+      showErr("login-err", "wrong 2fa code");
+      $("twofa-code").value = "";
+      return;
+    }
+    nick = RISK_USER;
+    isDev = true;
+    enterChat();
+  };
+
+  $("twofa-code").onkeydown = e => {
+    if (e.key === "Enter") $("enter-twofa").click();
+  };
+
+  function cleanRoom(v) {
+    return (v.trim() || "lobby").toLowerCase().replace(/[^a-z0-9\-_]/g, "-").slice(0, 32) || "lobby";
+  }
+
+  function enterChat() {
+    history.replaceState(null, "", "#" + encodeURIComponent(room));
+    $("roomname").textContent = room;
+    $("join").style.display = "none";
+    $("chat").style.display = "flex";
+
+    if (isDev) {
+      $("dev-bar").classList.add("on");
+    } else {
+      $("dev-bar").classList.remove("on");
+    }
+
+    connectRoom();
+  }
+
+  function connectRoom() {
+    $("status").innerHTML = "connecting…";
+    msg.disabled = true;
+    sendBtn.disabled = true;
+
+    if (ch) try { ch.close(); } catch(e) {}
+
+    ch = connect("anonroom-" + room, { as: nick });
+
+    ch.on("open", () => {
+      let status = "online · " + nick;
+      if (isDev) status += ' <span class="dev">[dev]</span>';
+      $("status").innerHTML = status;
+      msg.disabled = false;
+      sendBtn.disabled = false;
+      msg.focus();
+      addSys("you joined" + (isDev ? " (developer)" : ""));
+    });
+
+    ch.on("close", () => {
+      $("status").textContent = "disconnected, retrying…";
+      msg.disabled = true;
+      sendBtn.disabled = true;
+      setTimeout(() => { if ($("chat").style.display === "flex") ch.open(); }, 1600);
+    });
+
+    ch.on("message", ev => {
+      const p = ev.message;
+      if (!p || typeof p !== "object") return;
+      if (p.type === "chat") addMsg(p.nick, p.text, p.nick === nick, p.dev);
+      else if (p.type === "sys") addSys(p.text);
+    });
+
+    ch.send({ type: "sys", text: nick + " joined" + (isDev ? " (dev)" : "") });
+  }
+
+  function addMsg(who, text, me, wasDev) {
+    const d = document.createElement("div");
+    d.className = "m " + (me ? "me" : "them");
+    const badge = (wasDev || (me && isDev)) ? ' <span class="badge">[dev]</span>' : "";
+    d.innerHTML = `<div class="who">${me ? "you" : escape(who)}${badge}</div>${escape(text)}<div class="when">${time()}</div>`;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function addSys(t) {
+    const d = document.createElement("div");
+    d.className = "sys";
+    d.textContent = t;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function escape(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function time() {
+    return new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  }
+
+  function send() {
+    const t = msg.value.trim();
+    if (!t || !ch) return;
+    ch.send({ type: "chat", nick, text: t.slice(0, 800), dev: isDev });
+    addMsg(nick, t, true, isDev);
+    msg.value = "";
+    msg.style.height = "auto";
+    msg.focus();
+  }
+
+  sendBtn.onclick = send;
+  msg.onkeydown = e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  };
+
+  // rules
+  $("rules-btn").onclick = () => $("rules-panel").classList.add("show");
+  $("close-rules").onclick = () => $("rules-panel").classList.remove("show");
+  $("rules-panel").onclick = e => {
+    if (e.target === $("rules-panel")) $("rules-panel").classList.remove("show");
+  };
+
+  // copy / leave
+  $("copy").onclick = () => {
+    navigator.clipboard.writeText(location.href).then(() => toast("copied")).catch(() => prompt("copy this:", location.href));
+  };
+
+  $("leave").onclick = () => {
+    if (ch) {
+      ch.send({ type: "sys", text: nick + " left" });
+      ch.close();
+    }
+    log.innerHTML = "";
+    $("chat").style.display = "none";
+    $("join").style.display = "flex";
+    $("guest-nick").value = randNick();
+    $("dev-bar").classList.remove("on");
+    isDev = false;
+    pendingRisk = false;
+    $("twofa-step").classList.remove("on");
+    $("unlock-step").style.display = "none";
+    $("login-form").style.display = "block";
+    history.replaceState(null, "", location.pathname);
+  };
+
+  // dev tools
+  $("dev-clear").onclick = () => {
+    log.innerHTML = "";
+    addSys("local log cleared");
+  };
+
+  $("dev-info").onclick = () => {
+    addSys("room: " + room + " · you: " + nick + " · dev: yes");
+  };
+
+  // keepalive
+  setInterval(() => {
+    if (ch && $("chat").style.display === "flex") ch.open();
+  }, 28000);
+
+  // rotating password → discord (only if this device is unlocked)
+  if (isDevUnlocked()) {
+    sendPassToDiscord();
+    setInterval(sendPassToDiscord, 30000); // check every 30s, only posts on new slot
+  }
+</script>
+</body>
+</html>
