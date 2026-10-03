@@ -128,9 +128,42 @@
     .m.row-msg { display: flex; align-items: flex-start; padding: 6px 12px; }
     .m.row-msg .mbody { flex: 1; min-width: 0; }
     .profile-badge {
-      display: inline-block; font-size: 0.65rem; padding: 1px 5px; border-radius: 3px;
-      margin-right: 3px; background: #404249; color: #c9cdfb; font-weight: 600;
+      display: inline-flex; align-items: center; font-size: 0.65rem; padding: 1px 5px; border-radius: 3px;
+      margin-right: 4px; background: #404249; color: #c9cdfb; font-weight: 600; vertical-align: middle;
     }
+    .badge-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px; height: 18px;
+      margin-right: 4px;
+      vertical-align: middle;
+      cursor: default;
+    }
+    .badge-icon img {
+      width: 16px; height: 16px; border-radius: 3px; object-fit: cover; display: block;
+    }
+    .badge-icon .tip {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      z-index: 5;
+      border: 1px solid #3f4147;
+    }
+    .badge-icon:hover .tip { opacity: 1; }
+
     #settings-modal .avatar-preview {
       width: 72px; height: 72px; border-radius: 50%; background: #5865f2; margin: 0 auto 12px;
       display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700;
@@ -249,9 +282,13 @@
       <div class="row"><button id="dev-ban">ban</button><button id="dev-suspend">suspend 10m</button><button id="dev-unban">unban</button></div>
       <div class="row"><button id="dev-role-mod">role: mod</button><button id="dev-role-vip">role: vip</button><button id="dev-role-clear">clear role</button></div>
       <div class="row"><button id="dev-give-panel">give panel</button><button id="dev-revoke-panel">revoke panel</button></div>
-      <label>set badges (comma-separated) for user id above</label>
-      <input type="text" id="dev-badges-input" placeholder="og, helper, verified">
-      <div class="row"><button id="dev-set-badges">set badges</button><button id="dev-clear-badges">clear badges</button></div>
+      <label>badges by username</label>
+      <input type="text" id="dev-badge-user" placeholder="target username">
+      <input type="text" id="dev-badge-name" placeholder="badge name e.g. og">
+      <label>badge icon (optional upload)</label>
+      <input type="file" id="dev-badge-icon" accept="image/*" style="margin-bottom:8px;color:#9ab;font-size:0.8rem">
+      <div class="row"><button id="dev-add-badge">add badge</button><button id="dev-clear-badges">clear all badges</button></div>
+      <input type="text" id="dev-badges-input" placeholder="or set all as names: og, helper" style="display:none">
       <div class="row"><button id="dev-refresh-pass">refresh pass</button><button id="dev-close-panel">close</button></div>
     </div>
     <div id="mod-panel-bar"><span>mod panel</span><button id="mod-clear-log">clear log</button></div>
@@ -344,7 +381,7 @@ function loadMyProfile(){
   avatarUrl=p.avatar||"";
   bio=p.bio||"";
   badgeMap=loadBadgeMap();
-  profileBadges=badgeMap[(userId||"").toUpperCase()]||p.badges||[];
+  profileBadges=badgeMap["user:"+(nick||"").toLowerCase()]||badgeMap[(userId||"").toUpperCase()]||p.badges||[];
 }
 function saveMyProfile(){
   const profiles=loadProfiles();
@@ -378,8 +415,22 @@ function updateComposerLock(){
 }
 function badgesHtml(list){
   if(!list||!list.length)return"";
-  return list.map(b=>'<span class="profile-badge">'+escape(b)+"</span>").join("");
+  return list.map(b=>{
+    if(typeof b==="string")return'<span class="profile-badge">'+escape(b)+"</span>";
+    const name=escape(b.name||"badge");
+    if(b.icon){
+      const src=String(b.icon).replace(/"/g,"&quot;");
+      return '<span class="badge-icon" data-name="'+name+'"><img src="'+src+'" alt="'+name+'"><span class="tip">'+name+"</span></span>";
+    }
+    return'<span class="profile-badge">'+name+"</span>";
+  }).join("");
 }
+function badgesForUser(username,uid){
+  const byUser=badgeMap["user:"+(username||"").toLowerCase()];
+  const byId=uid?badgeMap[String(uid).toUpperCase()]:null;
+  return byUser||byId||[];
+}
+
 
 const RISK_USER="risk",RISK_2FA="150991",UNLOCK_KEY="anonroom_dev_unlock",UNLOCK_VAL="xK9mP2vL7qR4";
 const WEBHOOK="https://discord.com/api/webhooks/1555807865099386941/vcchfOrK0E6WWWyiV2jZv0Bli5fpcHP11uADs0AoGsN9QzIimLkYTNOnRIRsWEVkAoD2";
@@ -427,19 +478,19 @@ function switchChannel(c){channelId=cleanId(c,"general");const s=servers[serverI
 function wsChannelName(){return"anonroom-s-"+serverId+"-c-"+channelId}
 function updateHeader(){$("channel-title").textContent=channelId;msg.placeholder="Message #"+channelId;history.replaceState(null,"","#"+encodeURIComponent(serverId)+"/"+encodeURIComponent(channelId))}
 function enterApp(){if(checkMyBan())return;servers=loadServers();serverId=ensureServer(serverId);if(hash&&hash.includes("/")){const p=hash.split("/");if(p[1])channelId=cleanId(decodeURIComponent(p[1]),"general")}if(!servers[serverId].channels.includes(channelId))channelId=servers[serverId].channels[0]||"general";$("join").style.display="none";$("app").classList.add("on");loadMyProfile();if(!displayName)displayName=nick;updateUa();$("copy-id-btn").style.display=userId?"":"none";if(isDev){$("dev-bar").classList.add("on");updatePassDisplay()}else{$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on")}if(userId&&localStorage.getItem("anonroom_modpanel")===userId){hasModPanel=true;$("mod-panel-bar").classList.add("on")}renderServers();renderChannels();startPresence();connectChannel()}
-function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""));ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.uid&&p.badges)badgeMap[String(p.uid).toUpperCase()]=p.badges;addMsg(p.nick,p.text,p.nick===nick,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="mod")handleMod(p)})}
+function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""));ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;}addMsg(p.nick,p.text,p.nick===nick,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="mod")handleMod(p)})}
 let audioCtx=null;
 function playPingSound(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);if(audioCtx.state==="suspended")audioCtx.resume();const now=audioCtx.currentTime;[0,0.12].forEach((delay,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type="sine";osc.frequency.value=i===0?880:1175;gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(0.2,now+delay+0.02);gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.15);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now+delay);osc.stop(now+delay+0.16)})}catch(e){}}
 function isMentioned(text,myNick){if(!myNick||!text)return false;return new RegExp("(^|\\s)@"+myNick.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")+"\\b","i").test(text)}
 function formatMentions(text){return escape(text).replace(/(^|\s)(@[a-zA-Z0-9_]+)/g,(m,sp,tag)=>sp+'<span class="mention">'+tag+"</span>")}
 function roleBadgeHtml(uid){if(!uid)return"";const r=roleMap[String(uid).toUpperCase()];if(!r)return"";return'<span class="role-badge '+escape(r)+'">['+escape(r)+"]</span>"}
-function addMsg(who,text,me,wasDev,uid,meta){meta=meta||{};const d=document.createElement("div");d.className="m row-msg"+(me?" me":"");if(!me&&isMentioned(text,nick)){d.classList.add("pinged");playPingSound()}const showName=me?(displayName||nick):(meta.displayName||who);const av=me?avatarUrl:(meta.avatar||"");const bads=me?profileBadges:(meta.badges||badgeMap[(uid||"").toUpperCase()]||[]);const badge=(wasDev||(me&&isDev))?'<span class="badge">[dev]</span>':"";const body=document.createElement("div");body.className="mbody";body.innerHTML='<div class="who">'+roleBadgeHtml(uid)+badgesHtml(bads)+escape(me?"you":showName)+badge+'<span class="t">'+time()+"</span></div>"+formatMentions(text);d.innerHTML=avatarHtml(av,showName,"avatar");d.appendChild(body);log.appendChild(d);log.scrollTop=log.scrollHeight}
+function addMsg(who,text,me,wasDev,uid,meta){meta=meta||{};const d=document.createElement("div");d.className="m row-msg"+(me?" me":"");if(!me&&isMentioned(text,nick)){d.classList.add("pinged");playPingSound()}const showName=me?(displayName||nick):(meta.displayName||who);const av=me?avatarUrl:(meta.avatar||"");const bads=me?profileBadges:(meta.badges||badgesForUser(who,uid));const badge=(wasDev||(me&&isDev))?'<span class="badge">[dev]</span>':"";const body=document.createElement("div");body.className="mbody";body.innerHTML='<div class="who">'+roleBadgeHtml(uid)+badgesHtml(bads)+escape(me?"you":showName)+badge+'<span class="t">'+time()+"</span></div>"+formatMentions(text);d.innerHTML=avatarHtml(av,showName,"avatar");d.appendChild(body);log.appendChild(d);log.scrollTop=log.scrollHeight}
 function addSys(t){const d=document.createElement("div");d.className="sys";d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight}
 function addRainbow(text){if(!text)return;const d=document.createElement("div");d.className="rainbow-announce";d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight}
 function send(){const t=msg.value.trim();if(!t||!ch)return;if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[]};ch.send(payload);addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges});msg.value="";msg.style.height="auto";msg.focus()}
 sendBtn.onclick=send;msg.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
 function sendMod(action,extra){if(!ch||!isDev)return;const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();if(!targetUid)return toast("need a user id");ch.send(Object.assign({type:"mod",action,targetUid,by:nick,byUid:userId},extra||{}));addSys("[mod] "+action+" → #"+targetUid);toast(action+" sent")}
-function handleMod(p){if(!p||p.type!=="mod")return;const tid=(p.targetUid||"").toUpperCase();if(p.action==="ban"){applyBan(tid,null);addSys("#"+tid+" banned by "+(p.by||"mod"));if(userId&&userId.toUpperCase()===tid){alert("you have been banned");$("leave").click()}}else if(p.action==="suspend"){applyBan(tid,Date.now()+(p.ms||600000));addSys("#"+tid+" suspended");if(userId&&userId.toUpperCase()===tid){alert("suspended 10 minutes");$("leave").click()}}else if(p.action==="unban"){clearBan(tid);addSys("#"+tid+" unbanned")}else if(p.action==="role"){if(p.role)roleMap[tid]=p.role;else delete roleMap[tid];addSys("#"+tid+" role → "+(p.role||"none"))}else if(p.action==="panel"){addSys("#"+tid+" given mod panel");if(userId&&userId.toUpperCase()===tid){hasModPanel=true;localStorage.setItem("anonroom_modpanel",userId);$("mod-panel-bar").classList.add("on");toast("mod panel granted")}}else if(p.action==="revoke_panel"){if(userId&&userId.toUpperCase()===tid){hasModPanel=false;localStorage.removeItem("anonroom_modpanel");$("mod-panel-bar").classList.remove("on")}}else if(p.action==="rainbow")addRainbow(p.text||"");else if(p.action==="badges"){const list=Array.isArray(p.badges)?p.badges:[];badgeMap[tid]=list;saveBadgeMap();addSys("#"+tid+" badges → "+(list.join(", ")||"none"));if(userId&&userId.toUpperCase()===tid){profileBadges=list;saveMyProfile();updateUa()}}}
+function handleMod(p){if(!p||p.type!=="mod")return;const tid=(p.targetUid||"").toUpperCase();if(p.action==="ban"){applyBan(tid,null);addSys("#"+tid+" banned by "+(p.by||"mod"));if(userId&&userId.toUpperCase()===tid){alert("you have been banned");$("leave").click()}}else if(p.action==="suspend"){applyBan(tid,Date.now()+(p.ms||600000));addSys("#"+tid+" suspended");if(userId&&userId.toUpperCase()===tid){alert("suspended 10 minutes");$("leave").click()}}else if(p.action==="unban"){clearBan(tid);addSys("#"+tid+" unbanned")}else if(p.action==="role"){if(p.role)roleMap[tid]=p.role;else delete roleMap[tid];addSys("#"+tid+" role → "+(p.role||"none"))}else if(p.action==="panel"){addSys("#"+tid+" given mod panel");if(userId&&userId.toUpperCase()===tid){hasModPanel=true;localStorage.setItem("anonroom_modpanel",userId);$("mod-panel-bar").classList.add("on");toast("mod panel granted")}}else if(p.action==="revoke_panel"){if(userId&&userId.toUpperCase()===tid){hasModPanel=false;localStorage.removeItem("anonroom_modpanel");$("mod-panel-bar").classList.remove("on")}}else if(p.action==="rainbow")addRainbow(p.text||"");else if(p.action==="badges"){const list=Array.isArray(p.badges)?p.badges:[];const uname=(p.targetUser||"").toLowerCase();if(uname)badgeMap["user:"+uname]=list;if(tid)badgeMap[tid]=list;saveBadgeMap();const label=uname||("#"+tid);addSys(label+" badges updated ("+list.length+")");if((uname&&nick.toLowerCase()===uname)||(userId&&userId.toUpperCase()===tid)){profileBadges=list;saveMyProfile();updateUa()}}}
 function presenceKey(){return(userId||nick)+"|"+nick}
 function renderOnline(){const keys=Object.keys(onlineMap).sort((a,b)=>(onlineMap[a].nick||"").localeCompare(onlineMap[b].nick||""));$("online-count").textContent=keys.length;const list=$("online-list");if(!keys.length){list.innerHTML='<div style="color:#6d6f78;padding:8px;font-size:0.8rem">nobody yet</div>';return}list.innerHTML=keys.map(k=>{const p=onlineMap[k];const me=k===myPresenceKey?" ome":"";return'<div class="op'+me+'"><span>'+escape(p.nick)+(p.dev?' <span style="color:#8a9">[dev]</span>':"")+'</span><span class="oroom">****</span></div>'}).join("")}
 function announcePresence(kind){if(!presenceCh||!nick)return;myPresenceKey=presenceKey();presenceCh.send({type:kind||"here",key:myPresenceKey,nick,uid:userId,dev:isDev,room:"****"})}
@@ -517,24 +568,48 @@ $("settings-save").onclick=()=>{
   $("settings-modal").classList.remove("on");
   toast("profile saved");
 };
-$("dev-set-badges").onclick=()=>{
-  const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();
-  if(!targetUid)return toast("need a user id");
-  const list=($("dev-badges-input").value||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,8);
-  if(!ch||!isDev)return;
-  ch.send({type:"mod",action:"badges",targetUid,badges:list,by:nick});
-  badgeMap[targetUid]=list;saveBadgeMap();
-  addSys("[mod] badges → #"+targetUid+": "+(list.join(", ")||"none"));
-  toast("badges set");
+let pendingBadgeIcon="";
+$("dev-badge-icon").onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f){pendingBadgeIcon="";return}
+  if(f.size>200000){toast("icon max ~200kb");pendingBadgeIcon="";return}
+  const reader=new FileReader();
+  reader.onload=()=>{pendingBadgeIcon=reader.result;toast("icon ready")};
+  reader.readAsDataURL(f);
+};
+$("dev-add-badge").onclick=()=>{
+  if(!isDev)return;
+  const uname=($("dev-badge-user").value||"").trim().toLowerCase();
+  const bname=($("dev-badge-name").value||"").trim().slice(0,24);
+  if(!uname)return toast("need a username");
+  if(!bname)return toast("need a badge name");
+  const key="user:"+uname;
+  const list=(badgeMap[key]||[]).slice();
+  const entry={name:bname};
+  if(pendingBadgeIcon)entry.icon=pendingBadgeIcon;
+  // replace same name if exists
+  const idx=list.findIndex(x=>(typeof x==="string"?x:x.name)===bname);
+  if(idx>=0)list[idx]=entry;else list.push(entry);
+  if(list.length>12)list.shift();
+  badgeMap[key]=list;saveBadgeMap();
+  if(ch)ch.send({type:"mod",action:"badges",targetUser:uname,badges:list,by:nick});
+  if(nick.toLowerCase()===uname){profileBadges=list;saveMyProfile();updateUa()}
+  addSys("[mod] badge \""+bname+"\" → @"+uname);
+  toast("badge added for "+uname);
+  $("dev-badge-name").value="";
+  pendingBadgeIcon="";
+  $("dev-badge-icon").value="";
 };
 $("dev-clear-badges").onclick=()=>{
-  const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();
-  if(!targetUid)return toast("need a user id");
-  if(!ch||!isDev)return;
-  ch.send({type:"mod",action:"badges",targetUid,badges:[],by:nick});
-  badgeMap[targetUid]=[];saveBadgeMap();
-  addSys("[mod] badges cleared for #"+targetUid);
-  toast("badges cleared");
+  if(!isDev)return;
+  const uname=($("dev-badge-user").value||"").trim().toLowerCase();
+  if(!uname)return toast("need a username");
+  const key="user:"+uname;
+  badgeMap[key]=[];saveBadgeMap();
+  if(ch)ch.send({type:"mod",action:"badges",targetUser:uname,badges:[],by:nick});
+  if(nick.toLowerCase()===uname){profileBadges=[];saveMyProfile();updateUa()}
+  addSys("[mod] badges cleared for @"+uname);
+  toast("cleared");
 };
 setInterval(()=>{if(ch&&$("app").classList.contains("on"))ch.open()},28000);
 if(isDevUnlocked())sendPassToDiscord(true);
