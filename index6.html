@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>anon room</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: #1e1f22; color: #dbdee1; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    #join { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .box { background: #2b2d31; padding: 28px 24px 24px; width: 100%; max-width: 360px; border-radius: 8px; }
+    .box h1 { font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; color: #f2f3f5; }
+    .box p { color: #949ba4; font-size: 0.85rem; margin-bottom: 18px; line-height: 1.4; }
+    .tabs { display: flex; margin-bottom: 18px; border-bottom: 1px solid #3f4147; }
+    .tabs button { flex: 1; background: none; border: none; color: #949ba4; padding: 8px 0; font-size: 0.85rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tabs button.on { color: #f2f3f5; border-bottom-color: #5865f2; }
+    .tab-panel { display: none; } .tab-panel.on { display: block; }
+    label { display: block; font-size: 0.72rem; font-weight: 600; color: #b5bac1; text-transform: uppercase; margin-bottom: 6px; }
+    input[type="text"], input[type="password"], textarea { width: 100%; background: #1e1f22; border: 1px solid #1e1f22; color: #dbdee1; padding: 10px 12px; font-size: 0.95rem; margin-bottom: 14px; outline: none; border-radius: 4px; font-family: inherit; }
+    input:focus, textarea:focus { border-color: #5865f2; }
+    .go { width: 100%; background: #5865f2; border: none; color: #fff; padding: 11px; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 4px; margin-top: 4px; }
+    .go:hover { background: #4752c4; }
+    .err { color: #f23f43; font-size: 0.8rem; margin-bottom: 10px; display: none; } .err.show { display: block; }
+    .hint { font-size: 0.75rem; color: #6d6f78; margin-top: -8px; margin-bottom: 12px; }
+    #twofa-step, #unlock-step { display: none; } #twofa-step.on { display: block; }
+    #app { display: none; height: 100%; width: 100%; } #app.on { display: flex; }
+    #servers { width: 72px; background: #1e1f22; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; flex-shrink: 0; }
+    .srv { width: 48px; height: 48px; border-radius: 50%; background: #313338; color: #dbdee1; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-radius 0.15s, background 0.15s; background-size: cover; background-position: center; }
+    .srv:hover, .srv.on { border-radius: 16px; background-color: #5865f2; color: #fff; }
+    .srv.add { color: #23a559; font-size: 1.4rem; font-weight: 400; } .srv.add:hover { background-color: #23a559; color: #fff; }
+    .srv-sep { width: 32px; height: 2px; background: #35363c; margin: 4px 0; }
+    #sidebar { width: 240px; background: #2b2d31; display: flex; flex-direction: column; flex-shrink: 0; }
+    #sidebar .server-head { height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e1f22; font-weight: 600; font-size: 0.95rem; color: #f2f3f5; }
+    #sidebar .server-head button { background: none; border: none; color: #b5bac1; cursor: pointer; font-size: 1rem; }
+    #channel-list { flex: 1; overflow-y: auto; padding: 12px 8px; }
+    .cat { font-size: 0.68rem; font-weight: 700; color: #949ba4; text-transform: uppercase; padding: 8px 8px 4px; display: flex; justify-content: space-between; align-items: center; }
+    .cat button { background: none; border: none; color: #949ba4; cursor: pointer; font-size: 0.9rem; }
+    .ch-wrap { display: flex; align-items: center; width: 100%; border-radius: 4px; }
+    .ch-wrap:hover { background: #35373c; }
+    .ch-wrap.on { background: #404249; }
+    .ch { display: flex; align-items: center; gap: 6px; padding: 6px 8px; color: #949ba4; cursor: pointer; font-size: 0.92rem; border: none; background: none; flex: 1; text-align: left; min-width: 0; }
+    .ch-wrap:hover .ch { color: #dbdee1; } .ch-wrap.on .ch { color: #fff; }
+    .ch .hash { color: #80848e; font-weight: 600; }
+    .ch-edit-btn { background: none; border: none; color: #949ba4; padding: 4px 6px; cursor: pointer; font-size: 0.8rem; display: none; }
+    .ch-wrap:hover .ch-edit-btn { display: block; }
+    .ch-edit-btn:hover { color: #fff; }
+    #user-area { padding: 8px; background: #232428; display: flex; align-items: center; gap: 8px; min-height: 52px; }
+    #user-area .uinfo { flex: 1; min-width: 0; }
+    #user-area .uname { font-size: 0.85rem; font-weight: 600; color: #f2f3f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #user-area .ustatus { font-size: 0.7rem; color: #949ba4; }
+    #user-area button { background: #2b2d31; border: none; color: #b5bac1; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
+    #user-area button:hover { background: #35373c; color: #fff; }
+    #main { flex: 1; display: flex; flex-direction: column; background: #313338; min-width: 0; }
+    #main-head { height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e1f22; flex-shrink: 0; gap: 8px; }
+    #main-head .ch-title { font-weight: 600; font-size: 1rem; color: #f2f3f5; display: flex; align-items: center; gap: 8px; min-width: 0; }
+    #main-head .ch-title .hash { color: #80848e; }
+    #main-head .actions { display: flex; gap: 6px; flex-shrink: 0; }
+    #main-head .actions button { background: none; border: 1px solid #3f4147; color: #b5bac1; padding: 5px 9px; font-size: 0.75rem; cursor: pointer; border-radius: 4px; }
+    #main-head .actions button:hover { background: #3f4147; color: #fff; }
+    #dev-bar, #mod-panel-bar { display: none; padding: 8px 12px; font-size: 0.75rem; flex-shrink: 0; }
+    #dev-bar { background: #1a221a; border-bottom: 1px solid #2e3a2e; color: #8a9; flex-direction: column; gap: 8px; }
+    #dev-bar.on { display: flex; }
+    #dev-bar .dev-top { display: flex; justify-content: space-between; align-items: center; }
+    #dev-bar .dev-pass { background: #111; border: 1px solid #3a4a3a; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; color: #b8d4b8; }
+    #dev-bar .dev-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    #dev-bar button, #dev-panel button, #mod-panel-bar button { background: none; border: 1px solid #3a4a3a; color: #8a9; padding: 5px 9px; font-size: 0.75rem; cursor: pointer; }
+    #dev-bar button:hover, #dev-panel button:hover { background: #243024; }
+    #dev-panel { display: none; background: #151c15; border-bottom: 1px solid #2e3a2e; padding: 12px; font-size: 0.82rem; color: #9ab; max-height: 40vh; overflow-y: auto; flex-shrink: 0; }
+    #dev-panel.on { display: block; }
+    #dev-panel label { color: #6a8; margin-bottom: 4px; text-transform: none; font-size: 0.75rem; }
+    #dev-panel input, #dev-panel textarea { background: #111; border: 1px solid #3a4a3a; margin-bottom: 8px; }
+    #dev-panel .row { display: flex; gap: 6px; margin-bottom: 8px; }
+    #dev-panel .row button { flex: 1; }
+    #mod-panel-bar { background: #1a1a22; border-bottom: 1px solid #2e2e3a; color: #99a; align-items: center; gap: 8px; }
+    #mod-panel-bar.on { display: flex; }
+    #log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 2px; }
+    .m { padding: 4px 12px; border-radius: 4px; max-width: 100%; line-height: 1.4; font-size: 0.95rem; word-break: break-word; }
+    .m:hover { background: #2e3035; }
+    .m .who { font-size: 0.85rem; font-weight: 600; color: #f2f3f5; margin-bottom: 2px; }
+    .m .who .t { font-weight: 400; font-size: 0.7rem; color: #949ba4; margin-left: 8px; }
+    .m.me .who { color: #c9cdfb; }
+    .m .mention { background: #5865f233; color: #c9cdfb; padding: 0 2px; border-radius: 3px; font-weight: 600; }
+    .m.pinged { background: #5865f215; box-shadow: inset 2px 0 0 #5865f2; }
+    .sys { align-self: center; color: #949ba4; font-size: 0.8rem; font-style: italic; padding: 6px 0; }
+    .rainbow-announce { align-self: center; font-weight: 700; font-size: 1rem; text-align: center; padding: 10px 14px; background: linear-gradient(90deg,#ff6b6b,#feca57,#48dbfb,#ff9ff3,#1dd1a1,#ff6b6b); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow-shift 3s linear infinite; max-width: 95%; }
+    @keyframes rainbow-shift { to { background-position: 200% center; } }
+    .role-badge { font-size: 0.7rem; padding: 0 4px; border-radius: 3px; margin-right: 5px; font-weight: 600; }
+    .role-badge.mod { background: #3a4a2a; color: #b8d4a0; }
+    .role-badge.vip { background: #3a3a2a; color: #e0d080; }
+    .badge { color: #8a9; font-size: 0.75rem; margin-left: 4px; }
+    #composer { padding: 0 16px 24px; flex-shrink: 0; }
+    #composer-inner { background: #383a40; border-radius: 8px; display: flex; align-items: flex-end; padding: 4px; }
+    #msg { flex: 1; background: transparent; border: none; color: #dbdee1; padding: 10px 12px; font-size: 0.95rem; resize: none; max-height: 160px; min-height: 44px; margin: 0; line-height: 1.375; }
+    #msg:focus { border: none; outline: none; }
+    #send { background: transparent; border: none; color: #b5bac1; padding: 10px 14px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+    #send:hover { color: #fff; } #send:disabled { opacity: 0.4; }
+    #members { width: 200px; background: #2b2d31; border-left: 1px solid #1e1f22; display: none; flex-direction: column; flex-shrink: 0; }
+    #members.on { display: flex; }
+    #members .mh { padding: 16px 12px 8px; font-size: 0.7rem; font-weight: 700; color: #949ba4; text-transform: uppercase; }
+    #online-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+    #online-list .op { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px; font-size: 0.85rem; color: #dbdee1; cursor: pointer; }
+    #online-list .op:hover { background: #35373c; }
+    #online-list .op .oroom { color: #6d6f78; font-family: monospace; font-size: 0.75rem; }
+    #online-list .op.ome { color: #c9cdfb; }
+    .op-actions { display: flex; gap: 4px; }
+    .op-btn { background: #383a40; border: none; color: #b5bac1; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; cursor: pointer; }
+    .op-btn:hover { background: #4e5058; color: #fff; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+    .modal.on { display: flex; }
+    .modal-box { background: #313338; border-radius: 8px; padding: 20px; width: 100%; max-width: 360px; }
+    .modal-box h2 { font-size: 1.1rem; margin-bottom: 14px; color: #f2f3f5; }
+    .modal-box .row-btns { display: flex; gap: 8px; margin-top: 8px; }
+    .modal-box .row-btns button { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .modal-box .ok { background: #5865f2; color: #fff; }
+    .modal-box .cancel { background: #4e5058; color: #fff; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #111; border: 1px solid #3f4147; color: #dbdee1; padding: 8px 14px; font-size: 0.8rem; border-radius: 6px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100; }
+    .toast.on { opacity: 1; }
+    @media (max-width: 720px) {
+      #sidebar { position: absolute; left: 72px; top: 0; bottom: 0; z-index: 20; display: none; }
+      #sidebar.mobile-on { display: flex; }
+      #members { position: absolute; right: 0; top: 0; bottom: 0; z-index: 20; width: 180px; }
+      #servers { width: 56px; }
+      .srv { width: 40px; height: 40px; font-size: 0.75rem; }
+    }
+
+    #user-area { cursor: pointer; }
+    #user-area .avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #5865f2; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;
+      flex-shrink: 0; overflow: hidden; background-size: cover; background-position: center;
+    }
+    .m .avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #5865f2; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;
+      flex-shrink: 0; overflow: hidden; background-size: cover; background-position: center; margin-right: 10px;
+    }
+    .m.row-msg { display: flex; align-items: flex-start; padding: 6px 12px; }
+    .m.row-msg .mbody { flex: 1; min-width: 0; }
+    .profile-badge {
+      display: inline-flex; align-items: center; font-size: 0.65rem; padding: 1px 5px; border-radius: 3px;
+      margin-right: 4px; background: #404249; color: #c9cdfb; font-weight: 600; vertical-align: middle;
+    }
+    .badge-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px; height: 18px;
+      margin-right: 4px;
+      vertical-align: middle;
+      cursor: default;
+    }
+    .badge-icon img {
+      width: 16px; height: 16px; border-radius: 3px; object-fit: cover; display: block;
+    }
+    .badge-icon .tip {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      z-index: 5;
+      border: 1px solid #3f4147;
+    }
+    .badge-icon:hover .tip { opacity: 1; }
+    .who-name {
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .who-name:hover {
+      text-decoration: underline;
+      color: #fff;
+    }
+    #pub-profile .avatar-preview {
+      width: 80px; height: 80px; border-radius: 50%; background: #5865f2; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;
+      overflow: hidden; background-size: cover; background-position: center; color: #fff;
+    }
+    #pub-profile .pub-name {
+      text-align: center; font-size: 1.15rem; font-weight: 700; color: #f2f3f5; margin-bottom: 4px;
+    }
+    #pub-profile .pub-user {
+      text-align: center; font-size: 0.85rem; color: #949ba4; margin-bottom: 10px;
+    }
+    #pub-profile .pub-bio {
+      background: #2b2d31; border-radius: 6px; padding: 10px 12px; color: #dbdee1;
+      font-size: 0.9rem; line-height: 1.4; margin-bottom: 12px; min-height: 40px;
+    }
+    #pub-profile .pub-badges {
+      text-align: center; margin-bottom: 12px; min-height: 24px;
+    }
+    .pub-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+    .pub-actions button { flex: 1; padding: 8px; border: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .pub-actions .btn-dm { background: #5865f2; color: #fff; }
+    .pub-actions .btn-dm:hover { background: #4752c4; }
+    .pub-actions .btn-block { background: #da373c; color: #fff; }
+    .pub-actions .btn-block:hover { background: #a1282b; }
+    .pub-actions .btn-unblock { background: #4e5058; color: #fff; }
+
+    #settings-modal .avatar-preview {
+      width: 72px; height: 72px; border-radius: 50%; background: #5865f2; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700;
+      overflow: hidden; background-size: cover; background-position: center; color: #fff;
+    }
+    .ch.locked .hash::after { content: " 🔒"; font-size: 0.7rem; }
+
+    /* Discord Markdown Formatting Styles */
+    .fmt-h1 { font-size: 1.5rem; font-weight: 700; color: #f2f3f5; margin: 4px 0; border-bottom: 1px solid #3f4147; padding-bottom: 2px; }
+    .fmt-h2 { font-size: 1.25rem; font-weight: 700; color: #f2f3f5; margin: 3px 0; }
+    .fmt-h3 { font-size: 1rem; font-weight: 700; color: #f2f3f5; margin: 2px 0; }
+    .fmt-subtext { font-size: 0.75rem; color: #949ba4; }
+    .fmt-spoiler { background: #2b2d31; color: transparent; border-radius: 3px; padding: 0 2px; cursor: pointer; user-select: none; }
+    .fmt-spoiler.revealed { background: rgba(255,255,255,0.1); color: inherit; }
+    .fmt-code-inline { background: #2b2d31; color: #eb459e; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.85em; }
+    .fmt-code-block { background: #2b2d31; border: 1px solid #1e1f22; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; margin: 4px 0; display: block; color: #dbdee1; }
+    .fmt-quote { border-left: 4px solid #4e5058; padding-left: 10px; margin: 2px 0; color: #b5bac1; }
+  </style>
+</head>
+<body>
+<div id="join">
+  <div class="box">
+    <h1>anon room</h1>
+    <p>servers &amp; channels. no email needed.</p>
+    <div class="tabs">
+      <button class="on" data-tab="guest">guest</button>
+      <button data-tab="login">login</button>
+      <button data-tab="signup">signup</button>
+    </div>
+    <div class="tab-panel on" id="tab-guest">
+      <label>nickname</label>
+      <input type="text" id="guest-nick" maxlength="20" autocomplete="off">
+      <label>server</label>
+      <input type="text" id="guest-server" maxlength="32" placeholder="home" autocomplete="off">
+      <button class="go" id="enter-guest">enter as guest</button>
+    </div>
+    <div class="tab-panel" id="tab-login">
+      <div class="err" id="login-err"></div>
+      <div id="login-form">
+        <label>username</label>
+        <input type="text" id="login-user" maxlength="24" autocomplete="username">
+        <label>password</label>
+        <div style="display:flex;gap:6px;margin-bottom:14px;align-items:center">
+          <input type="password" id="login-pass" autocomplete="current-password" style="margin-bottom:0;flex:1">
+          <button type="button" id="send2dc" style="display:none;background:#2b2d31;border:1px solid #3f4147;color:#b5bac1;padding:10px;font-size:0.75rem;cursor:pointer;border-radius:4px;white-space:nowrap">send 2 dc</button>
+        </div>
+        <label>server</label>
+        <input type="text" id="login-server" maxlength="32" placeholder="home" autocomplete="off">
+        <button class="go" id="enter-login">login &amp; enter</button>
+      </div>
+      <div id="twofa-step">
+        <p style="color:#949ba4;font-size:0.85rem;margin-bottom:12px">2fa required</p>
+        <label>2fa code</label>
+        <input type="text" id="twofa-code" maxlength="8" inputmode="numeric">
+        <button class="go" id="enter-twofa">verify &amp; enter</button>
+      </div>
+      <div id="unlock-step">
+        <p style="color:#949ba4;font-size:0.85rem;margin-bottom:12px">access key required</p>
+        <label>access key</label>
+        <input type="text" id="unlock-code" autocomplete="off">
+        <button class="go" id="enter-unlock">unlock device</button>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-signup">
+      <div class="err" id="signup-err"></div>
+      <label>username</label>
+      <input type="text" id="signup-user" maxlength="24" autocomplete="username">
+      <p class="hint">letters, numbers, _ only</p>
+      <label>password</label>
+      <input type="password" id="signup-pass" autocomplete="new-password">
+      <label>server</label>
+      <input type="text" id="signup-server" maxlength="32" placeholder="home" autocomplete="off">
+      <button class="go" id="enter-signup">create account &amp; enter</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="servers"></div>
+  <div id="sidebar">
+    <div class="server-head">
+      <span id="server-name" style="cursor:pointer" title="server settings">Home</span>
+      <button id="btn-add-channel" title="add channel">+</button>
+    </div>
+    <div id="channel-list"></div>
+    <div id="user-area" title="account settings">
+      <div class="avatar" id="ua-avatar">?</div>
+      <div class="uinfo">
+        <div class="uname" id="ua-name">—</div>
+        <div class="ustatus" id="ua-status">offline</div>
+      </div>
+      <button id="copy-id-btn" style="display:none" onclick="event.stopPropagation()">id</button>
+      <button id="leave" onclick="event.stopPropagation()">leave</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="main-head">
+      <div class="ch-title">
+        <button id="btn-toggle-sidebar" style="display:none;background:none;border:none;color:#b5bac1;cursor:pointer;font-size:1.1rem;padding:0 6px 0 0">☰</button>
+        <span class="hash" id="ch-prefix">#</span>
+        <span id="channel-title">general</span>
+      </div>
+      <div class="actions">
+        <button id="online-btn">members</button>
+        <button id="rules-btn">rules</button>
+        <button id="copy">invite</button>
+      </div>
+    </div>
+    <div id="dev-bar">
+      <div class="dev-top"><span>dev mode · risk</span><button id="dev-toggle-panel">panel</button></div>
+      <div class="dev-pass" id="dev-pass-display">—</div>
+      <div class="dev-actions">
+        <button id="dev-webhook">send 2 dc</button>
+        <button id="dev-clear">clear log</button>
+        <button id="dev-sys">sys msg</button>
+        <button id="dev-info">info</button>
+      </div>
+    </div>
+    <div id="dev-panel">
+      <label>system message</label>
+      <textarea id="dev-sys-text" placeholder="message everyone sees…"></textarea>
+      <div class="row"><button id="dev-sys-send">send as system</button><button id="dev-copy-pass">copy password</button></div>
+      <label>rainbow announce</label>
+      <div class="row"><input type="text" id="dev-rainbow-text" placeholder="rainbow message…" style="margin-bottom:0;flex:1"><button id="dev-rainbow-send">send</button></div>
+      <label style="margin-top:8px">mod actions (user id)</label>
+      <input type="text" id="dev-target-uid" placeholder="target user id">
+      <div class="row"><button id="dev-ban">ban</button><button id="dev-suspend">suspend 10m</button><button id="dev-unban">unban</button></div>
+      <div class="row"><button id="dev-role-mod">role: mod</button><button id="dev-role-vip">role: vip</button><button id="dev-role-clear">clear role</button></div>
+      <div class="row"><button id="dev-give-panel">give panel</button><button id="dev-revoke-panel">revoke panel</button></div>
+      <label>badges by username</label>
+      <input type="text" id="dev-badge-user" placeholder="target username">
+      <input type="text" id="dev-badge-name" placeholder="badge name e.g. og">
+      <label>badge icon (optional upload)</label>
+      <input type="file" id="dev-badge-icon" accept="image/*" style="margin-bottom:8px;color:#9ab;font-size:0.8rem">
+      <div class="row"><button id="dev-add-badge">add badge</button><button id="dev-clear-badges">clear all badges</button></div>
+      <input type="text" id="dev-badges-input" placeholder="or set all as names: og, helper" style="display:none">
+      <div class="row"><button id="dev-refresh-pass">refresh pass</button><button id="dev-close-panel">close</button></div>
+    </div>
+    <div id="mod-panel-bar"><span>mod panel</span><button id="mod-clear-log">clear log</button></div>
+    <div id="log"></div>
+    <div id="composer">
+      <div id="composer-inner">
+        <textarea id="msg" rows="1" placeholder="Message #general" disabled></textarea>
+        <button id="send" disabled>send</button>
+      </div>
+    </div>
+  </div>
+  <div id="members">
+    <div class="mh">online — <span id="online-count">0</span></div>
+    <div id="online-list"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal-server">
+  <div class="modal-box">
+    <h2>join / create server</h2>
+    <label>server name</label>
+    <input type="text" id="modal-server-name" maxlength="32" placeholder="my-server">
+    <div class="row-btns"><button class="cancel" id="modal-server-cancel">cancel</button><button class="ok" id="modal-server-ok">join</button></div>
+  </div>
+</div>
+<div class="modal" id="modal-channel">
+  <div class="modal-box">
+    <h2>create channel</h2>
+    <label>channel name</label>
+    <input type="text" id="modal-channel-name" maxlength="32" placeholder="new-channel">
+    <div class="row-btns"><button class="cancel" id="modal-channel-cancel">cancel</button><button class="ok" id="modal-channel-ok">create</button></div>
+  </div>
+</div>
+<div class="modal" id="modal-edit-channel">
+  <div class="modal-box">
+    <h2>edit channel</h2>
+    <label>channel name</label>
+    <input type="text" id="modal-edit-channel-name" maxlength="32">
+    <div class="row-btns"><button class="cancel" id="modal-edit-channel-cancel">cancel</button><button class="ok" id="modal-edit-channel-ok">save</button></div>
+  </div>
+</div>
+<div class="modal" id="modal-edit-server">
+  <div class="modal-box">
+    <h2>edit server settings</h2>
+    <label>server name</label>
+    <input type="text" id="modal-edit-server-name" maxlength="32">
+    <label>icon url</label>
+    <input type="text" id="modal-edit-server-icon" placeholder="https://... or leave blank">
+    <div class="row-btns"><button class="cancel" id="modal-edit-server-cancel">cancel</button><button class="ok" id="modal-edit-server-ok">save</button></div>
+  </div>
+</div>
+<div class="modal" id="rules-panel">
+  <div class="modal-box">
+    <h2>rules</h2>
+    <ul style="list-style:none;margin-bottom:16px;color:#b5bac1;font-size:0.9rem;line-height:1.5">
+      <li>– be decent. no harassment or doxxing</li>
+      <li>– no spam</li>
+      <li>– don’t share personal info</li>
+      <li>– messages, badges &amp; profiles save on this device only (no server)</li>
+    </ul>
+    <button class="ok" id="close-rules" style="width:100%">got it</button>
+  </div>
+</div>
+
+<div class="modal" id="settings-modal">
+  <div class="modal-box" style="max-width:400px">
+    <h2>account settings</h2>
+    <div class="avatar-preview" id="set-avatar-preview">?</div>
+    <label>profile picture (image url)</label>
+    <input type="text" id="set-avatar" placeholder="https://… or leave blank">
+    <label>or upload</label>
+    <input type="file" id="set-avatar-file" accept="image/*" style="margin-bottom:14px;color:#b5bac1;font-size:0.85rem">
+    <label>username (login)</label>
+    <input type="text" id="set-username" disabled style="opacity:0.7">
+    <label>display name</label>
+    <input type="text" id="set-display" maxlength="32" placeholder="shown in chat">
+    <label>bio</label>
+    <textarea id="set-bio" maxlength="160" placeholder="short bio…" style="min-height:60px"></textarea>
+    <label>your badges</label>
+    <div id="set-badges" style="margin-bottom:14px;color:#b5bac1;font-size:0.85rem">none</div>
+    <div class="row-btns">
+      <button class="cancel" id="settings-cancel">cancel</button>
+      <button class="ok" id="settings-save">save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pub-profile">
+  <div class="modal-box" style="max-width:340px">
+    <div class="avatar-preview" id="pub-avatar">?</div>
+    <div class="pub-name" id="pub-name">—</div>
+    <div class="pub-user" id="pub-user">@—</div>
+    <div class="pub-badges" id="pub-badges"></div>
+    <div class="pub-bio" id="pub-bio">no bio</div>
+    <div class="pub-actions" id="pub-actions">
+      <button class="btn-dm" id="pub-btn-dm">Message</button>
+      <button class="btn-block" id="pub-btn-block">Block</button>
+    </div>
+    <button class="ok" id="pub-close" style="width:100%">close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let connect=(e,s={})=>{let a,t,n=[],p={},o=()=>(a||(a=new WebSocket((/^wss?:/.test(e)?e:"wss://itty.ws/c/"+e)+"?"+new URLSearchParams(s)),a.onmessage=(e,s=JSON.parse(e.data),a=s?.message,t={...null==a?.[0]&&a,...s})=>[t.type,s.type?0:"message","*"].map(e=>p[e]?.map(e=>e(t))),a.onopen=()=>(n.splice(0).map(e=>a.send(e)),p.open?.map(e=>e(t)),t&&a?.close()),a.onclose=()=>(t=a=null,p.close?.map(e=>e(t)))),l),l={open:o,send:(e,s)=>(e=(s?`${s}`:"")+JSON.stringify(e),1&a?.readyState?a.send(e):n.push(e),o()),on:(e,s)=>((p[e?.[0]?e:"*"]??=[]).push(e?.[0]?s:a=>e?.(a)&&s(a)),o()),remove:(e,s)=>(p[e]=p[e]?.filter(e=>e!=s),l),close:()=>(1&a?.readyState?a.close():t=1,l),push:(e,s)=>(t=1,l.send(e,s))};return l};
+const $=id=>document.getElementById(id);
+const log=$("log"),msg=$("msg"),sendBtn=$("send");
+let ch=null,presenceCh=null,nick="",isDev=false,userId=null,hasModPanel=false;
+let serverId="home",channelId="general",servers={};
+let activeDmUser=null, dmList=[];
+let blockedUsers=[];
+let onlineMap={},myPresenceKey=null,presenceTimer=null,roleMap={},badgeMap={};
+let displayName="",avatarUrl="",bio="",profileBadges=[];
+let targetEditChannel=null;
+
+function canManageHomeServer() {
+  return serverId !== "home" || (isDev && (nick || "").toLowerCase() === "risk");
+}
+
+function loadProfiles(){try{return JSON.parse(localStorage.getItem("anonroom_profiles")||"{}")}catch{return{}}}
+function saveProfiles(p){localStorage.setItem("anonroom_profiles",JSON.stringify(p))}
+function loadBadgeMap(){try{return JSON.parse(localStorage.getItem("anonroom_badgemap")||"{}")}catch{return{}}}
+function saveBadgeMap(){localStorage.setItem("anonroom_badgemap",JSON.stringify(badgeMap))}
+function loadRoleMap(){try{return JSON.parse(localStorage.getItem("anonroom_roles")||"{}")}catch{return{}}}
+function saveRoleMap(){localStorage.setItem("anonroom_roles",JSON.stringify(roleMap))}
+function loadPublicCache(){try{return JSON.parse(localStorage.getItem("anonroom_public")||"{}")}catch{return{}}}
+function savePublicCache(){try{localStorage.setItem("anonroom_public",JSON.stringify(publicCache))}catch(e){}}
+function loadBlockedUsers(){try{return JSON.parse(localStorage.getItem("anonroom_blocked")||"[]")}catch{return[]}}
+function saveBlockedUsers(){localStorage.setItem("anonroom_blocked",JSON.stringify(blockedUsers))}
+function isBlocked(username){if(!username)return false;return blockedUsers.includes(String(username).toLowerCase())}
+function toggleBlock(username){
+  const key=String(username).toLowerCase();
+  if(!key||key===nick.toLowerCase())return;
+  if(isBlocked(key)){
+    blockedUsers=blockedUsers.filter(u=>u!==key);
+    toast("unblocked @"+key);
+  } else {
+    blockedUsers.push(key);
+    toast("blocked @"+key);
+  }
+  saveBlockedUsers();
+  renderHistory();
+  renderOnline();
+  if($("pub-profile").classList.contains("on"))showPublicProfile(key);
+}
+
+function loadDmList(){try{return JSON.parse(localStorage.getItem("anonroom_dms")||"[]")}catch{return[]}}
+function saveDmList(){localStorage.setItem("anonroom_dms",JSON.stringify(dmList))}
+function addDmUser(targetNick){
+  const u=String(targetNick).toLowerCase();
+  if(u===nick.toLowerCase())return;
+  if(!dmList.includes(u)){
+    dmList.push(u);
+    saveDmList();
+  }
+}
+function dmChannelRoom(userA, userB){
+  const pair=[String(userA).toLowerCase(), String(userB).toLowerCase()].sort().join("_");
+  return "dm-"+pair;
+}
+
+const SESSION_KEY="anonroom_session";
+function saveSession(){
+  try{
+    localStorage.setItem(SESSION_KEY,JSON.stringify({
+      nick,userId,isDev:!!isDev,serverId,channelId,activeDmUser,hasModPanel:!!hasModPanel,ts:Date.now()
+    }));
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    const raw=localStorage.getItem(SESSION_KEY);
+    if(!raw)return null;
+    const s=JSON.parse(raw);
+    if(!s||!s.nick)return null;
+    return s;
+  }catch{return null}
+}
+function clearSession(){
+  try{localStorage.removeItem(SESSION_KEY)}catch(e){}
+}
+const MSG_HISTORY_MAX=400;
+function msgStorageKey(sid,cid){
+  if(activeDmUser){
+    const pair=[String(nick).toLowerCase(), String(activeDmUser).toLowerCase()].sort().join("_");
+    return "anonroom_msgs_dm_"+pair;
+  }
+  return"anonroom_msgs_"+cleanId(sid||serverId,"home")+"_"+cleanId(cid||channelId,"general")
+}
+function loadMsgHistory(sid,cid){
+  try{
+    const raw=localStorage.getItem(msgStorageKey(sid,cid));
+    if(!raw)return[];
+    const arr=JSON.parse(raw);
+    return Array.isArray(arr)?arr:[];
+  }catch{return[]}
+}
+function saveMsgHistory(sid,cid,list){
+  try{
+    if(list.length>MSG_HISTORY_MAX)list=list.slice(-MSG_HISTORY_MAX);
+    localStorage.setItem(msgStorageKey(sid,cid),JSON.stringify(list));
+  }catch(e){
+    try{
+      list=list.slice(-Math.floor(MSG_HISTORY_MAX/2));
+      localStorage.setItem(msgStorageKey(sid,cid),JSON.stringify(list));
+    }catch(_){}
+  }
+}
+function persistMsg(entry){
+  const list=loadMsgHistory(serverId,channelId);
+  list.push(entry);
+  saveMsgHistory(serverId,channelId,list);
+}
+function clearMsgHistory(sid,cid){
+  try{localStorage.removeItem(msgStorageKey(sid,cid))}catch(e){}
+}
+function getProfileKey(){return userId||("guest:"+nick)}
+function loadMyProfile(){
+  const profiles=loadProfiles();
+  const key=getProfileKey();
+  const p=profiles[key]||{};
+  displayName=p.displayName||nick;
+  avatarUrl=p.avatar||"";
+  bio=p.bio||"";
+  badgeMap=loadBadgeMap();
+  roleMap=loadRoleMap();
+  publicCache=loadPublicCache();
+  blockedUsers=loadBlockedUsers();
+  dmList=loadDmList();
+  profileBadges=badgeMap["user:"+(nick||"").toLowerCase()]||badgeMap[(userId||"").toUpperCase()]||p.badges||[];
+}
+function saveMyProfile(){
+  const profiles=loadProfiles();
+  profiles[getProfileKey()]={displayName,avatar:avatarUrl,bio,badges:profileBadges};
+  saveProfiles(profiles);
+  saveBadgeMap();
+  saveRoleMap();
+  savePublicCache();
+  saveBlockedUsers();
+  saveDmList();
+}
+function avatarHtml(url,name,cls){
+  const letter=escape((name||"?").slice(0,1).toUpperCase());
+  if(url){
+    const safe=escape(url).replace(/"/g,"&quot;");
+    return '<div class="'+cls+'" style="background-image:url(\''+safe+'\')"></div>';
+  }
+  return '<div class="'+cls+'">'+letter+'</div>';
+}
+function setUaAvatar(){
+  const el=$("ua-avatar");
+  if(!el)return;
+  if(avatarUrl){el.style.backgroundImage="url('"+avatarUrl.replace(/'/g,"%27")+"')";el.textContent=""}
+  else{el.style.backgroundImage="";el.textContent=(displayName||nick||"?").slice(0,1).toUpperCase()}
+}
+function updateUa(){
+  $("ua-name").textContent=(displayName||nick)+(isDev?" [dev]":"");
+  setUaAvatar();
+}
+function isAnnounceChannel(){return !activeDmUser && channelId==="announcements"}
+function updateComposerLock(){
+  const locked=isAnnounceChannel()&&!isDev;
+  msg.disabled=locked||!ch;
+  sendBtn.disabled=locked||!ch;
+  if(activeDmUser){
+    msg.placeholder="Message @"+activeDmUser;
+  } else {
+    msg.placeholder=locked?"only risk can post in #announcements":("Message #"+channelId);
+  }
+}
+function badgesHtml(list){
+  if(!list||!list.length)return"";
+  return list.map(b=>{
+    if(typeof b==="string")return'<span class="profile-badge">'+escape(b)+"</span>";
+    const name=escape(b.name||"badge");
+    if(b.icon){
+      const src=String(b.icon).replace(/"/g,"&quot;");
+      return '<span class="badge-icon" data-name="'+name+'"><img src="'+src+'" alt="'+name+'"><span class="tip">'+name+"</span></span>";
+    }
+    return'<span class="profile-badge">'+name+"</span>";
+  }).join("");
+}
+function badgesForUser(username,uid){
+  const byUser=badgeMap["user:"+(username||"").toLowerCase()];
+  const byId=uid?badgeMap[String(uid).toUpperCase()]:null;
+  return byUser||byId||[];
+}
+let publicCache={};
+function cachePublicProfile(username, data){
+  if(!username)return;
+  const key=String(username).toLowerCase();
+  publicCache[key]=Object.assign({}, publicCache[key]||{}, data||{}, {username:key, updated:Date.now()});
+  const keys=Object.keys(publicCache);
+  if(keys.length>200){
+    keys.sort((a,b)=>(publicCache[a].updated||0)-(publicCache[b].updated||0));
+    keys.slice(0,keys.length-150).forEach(k=>delete publicCache[k]);
+  }
+}
+function showPublicProfile(username){
+  const key=String(username||"").toLowerCase();
+  if(!key)return;
+  const isMe=key===String(nick).toLowerCase();
+  let p=publicCache[key]||{};
+  if(isMe){
+    p={username:key, displayName:displayName||nick, avatar:avatarUrl||"", bio:bio||"", badges:profileBadges||[], uid:userId};
+  } else {
+    p.badges=p.badges||badgesForUser(key,p.uid)||[];
+  }
+  const name=p.displayName||p.username||key;
+  const av=$("pub-avatar");
+  if(p.avatar){av.style.backgroundImage="url('"+String(p.avatar).replace(/'/g,"%27")+"')";av.textContent=""}
+  else{av.style.backgroundImage="";av.textContent=String(name).slice(0,1).toUpperCase()}
+  $("pub-name").textContent=name;
+  $("pub-user").textContent="@"+key+(p.uid?" · #"+p.uid:"");
+  $("pub-badges").innerHTML=(p.badges&&p.badges.length)?badgesHtml(p.badges):'<span style="color:#6d6f78;font-size:0.8rem">no badges</span>';
+  $("pub-bio").textContent=p.bio||"no bio";
+  
+  const actions=$("pub-actions");
+  if(isMe){
+    actions.style.display="none";
+  } else {
+    actions.style.display="flex";
+    const dmBtn=$("pub-btn-dm");
+    const blockBtn=$("pub-btn-block");
+    
+    dmBtn.onclick=()=>{
+      $("pub-profile").classList.remove("on");
+      openDm(key);
+    };
+    
+    if(isBlocked(key)){
+      blockBtn.textContent="Unblock";
+      blockBtn.className="btn-unblock";
+    } else {
+      blockBtn.textContent="Block";
+      blockBtn.className="btn-block";
+    }
+    blockBtn.onclick=()=>{
+      toggleBlock(key);
+    };
+  }
+  
+  $("pub-profile").classList.add("on");
+}
+
+const RISK_USER="risk",RISK_2FA="150991",UNLOCK_KEY="anonroom_dev_unlock",UNLOCK_VAL="xK9mP2vL7qR4";
+const WEBHOOK="https://discord.com/api/webhooks/1555807865099386941/vcchfOrK0E6WWWyiV2jZv0Bli5fpcHP11uADs0AoGsN9QzIimLkYTNOnRIRsWEVkAoD2";
+function isDevUnlocked(){return localStorage.getItem(UNLOCK_KEY)===UNLOCK_VAL}
+function getCurrentDevPass(){const slot=Math.floor(Date.now()/120000);let h=slot*2654435761;h=((h>>>16)^h)*0x45d9f3b;h=((h>>>16)^h)*0x45d9f3b;h=(h>>>16)^h;return"rk"+String((h>>>0)%10000000).padStart(7,"0")}
+let lastSentSlot=-1;
+function sendPassToDiscord(force){const slot=Math.floor(Date.now()/120000);if(!force&&slot===lastSentSlot)return;lastSentSlot=slot;const pass=getCurrentDevPass();const minsLeft=Math.ceil((120000-(Date.now()%120000))/60000);fetch(WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:"**risk** password (next ~"+minsLeft+" min):\n`"+pass+"`"})}).then(r=>{if(r.ok||r.status===204)toast("sent to discord");else toast("webhook error "+r.status)}).catch(()=>toast("webhook failed – host the file"))}
+function loadAccounts(){try{return JSON.parse(localStorage.getItem("anonroom_accounts")||"{}")}catch{return{}}}
+function saveAccounts(a){localStorage.setItem("anonroom_accounts",JSON.stringify(a))}
+function loadServers(){let s=null;try{s=JSON.parse(localStorage.getItem("anonroom_servers")||"null")}catch{}if(!s||typeof s!=="object")s={home:{name:"Home",channels:["announcements","general","random","memes"],icon:""}};if(!s.home)s.home={name:"Home",channels:["announcements","general","random","memes"],icon:""};if(!s.home.channels.includes("announcements"))s.home.channels.unshift("announcements");return s}
+function saveServers(){localStorage.setItem("anonroom_servers",JSON.stringify(servers))}
+function genUserId(){return(Date.now().toString(36).slice(-4)+Math.random().toString(36).slice(2,6)).toUpperCase()}
+function randNick(){const a=["quiet","odd","gray","fast","low","dim","raw","old","new","far"],b=["fox","cat","owl","bug","dot","ash","mud","fog","ink","ray"];return a[Math.random()*a.length|0]+b[Math.random()*b.length|0]+(Math.random()*80+10|0)}
+function cleanId(v,fb){return((v||fb||"home")+"").toLowerCase().replace(/[^a-z0-9\-_]/g,"-").slice(0,32)||fb||"home"}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");setTimeout(()=>el.classList.remove("on"),1800)}
+function escape(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function time(ts){const d=ts?new Date(ts):new Date();return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function loadBans(){try{return JSON.parse(localStorage.getItem("anonroom_bans")||"{}")}catch{return{}}}
+function saveBans(b){localStorage.setItem("anonroom_bans",JSON.stringify(b))}
+function isBanned(uid){if(!uid)return false;const bans=loadBans(),b=bans[uid];if(!b)return false;if(b.until&&Date.now()>b.until){delete bans[uid];saveBans(bans);return false}return true}
+function banReason(uid){const b=loadBans()[uid];if(!b)return"";if(b.until)return"suspended until "+new Date(b.until).toLocaleTimeString();return"banned"}
+function applyBan(uid,until){if(!uid)return;const bans=loadBans();bans[uid]=until?{until}: {permanent:true};saveBans(bans)}
+function clearBan(uid){if(!uid)return;const bans=loadBans();delete bans[uid];saveBans(bans)}
+function checkMyBan(){if(userId&&isBanned(userId)){alert("you are "+banReason(userId));return true}return false}
+document.querySelectorAll(".tabs button").forEach(btn=>{btn.onclick=()=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("on"));btn.classList.add("on");$("tab-"+btn.dataset.tab).classList.add("on");$("twofa-step").classList.remove("on");$("unlock-step").style.display="none";$("login-form").style.display="block";$("login-err").classList.remove("show");$("signup-err").classList.remove("show")}});
+function showErr(id,text){const el=$(id);el.textContent=text;el.classList.add("show")}
+$("guest-nick").value=randNick();
+const hash=location.hash.slice(1);
+if(hash){const parts=hash.split("/");if(parts[0]){$("guest-server").value=decodeURIComponent(parts[0]);$("login-server").value=decodeURIComponent(parts[0]);$("signup-server").value=decodeURIComponent(parts[0])}}
+msg.addEventListener("input",()=>{msg.style.height="auto";msg.style.height=Math.min(msg.scrollHeight,160)+"px"});
+$("enter-guest").onclick=()=>{nick=($("guest-nick").value.trim()||randNick()).slice(0,20);userId=null;isDev=false;serverId=cleanId($("guest-server").value,"home");enterApp()};
+$("enter-signup").onclick=()=>{$("signup-err").classList.remove("show");const user=$("signup-user").value.trim().toLowerCase(),pass=$("signup-pass").value;serverId=cleanId($("signup-server").value,"home");if(!/^[a-z0-9_]{2,24}$/.test(user))return showErr("signup-err","username 2–24 chars");if(user===RISK_USER)return showErr("signup-err","reserved");if(pass.length<4)return showErr("signup-err","password too short");const acc=loadAccounts();if(acc[user])return showErr("signup-err","taken on this device");const id=genUserId();acc[user]={pass,id};saveAccounts(acc);nick=user;userId=id;isDev=false;enterApp()};
+$("login-user").addEventListener("input",()=>{$("send2dc").style.display=$("login-user").value.trim().toLowerCase()===RISK_USER?"block":"none"});
+$("send2dc").onclick=()=>sendPassToDiscord(true);
+$("enter-login").onclick=()=>{$("login-err").classList.remove("show");const user=$("login-user").value.trim().toLowerCase(),pass=$("login-pass").value;serverId=cleanId($("login-server").value,"home");if(!user||!pass)return showErr("login-err","fill both fields");if(user===RISK_USER){if(pass!==getCurrentDevPass())return showErr("login-err","wrong password (changes every 2 min)");$("login-form").style.display="none";if(!isDevUnlocked()){$("unlock-step").style.display="block";$("unlock-code").focus()}else{$("twofa-step").classList.add("on");$("twofa-code").focus()}return}const acc=loadAccounts();if(!acc[user]||acc[user].pass!==pass)return showErr("login-err","wrong username or password");if(!acc[user].id){acc[user].id=genUserId();saveAccounts(acc)}nick=user;userId=acc[user].id;isDev=false;enterApp()};
+$("enter-unlock").onclick=()=>{$("login-err").classList.remove("show");if($("unlock-code").value.trim()!==UNLOCK_VAL)return showErr("login-err","wrong access key");localStorage.setItem(UNLOCK_KEY,UNLOCK_VAL);sendPassToDiscord(true);$("unlock-step").style.display="none";$("twofa-step").classList.add("on");$("twofa-code").focus()};
+$("enter-twofa").onclick=()=>{$("login-err").classList.remove("show");if(!isDevUnlocked())return showErr("login-err","device not unlocked");if($("twofa-code").value.trim()!==RISK_2FA)return showErr("login-err","wrong 2fa");nick=RISK_USER;userId="DEV-0001";isDev=true;sendPassToDiscord(true);enterApp()};
+$("twofa-code").onkeydown=e=>{if(e.key==="Enter")$("enter-twofa").click()};
+$("unlock-code").onkeydown=e=>{if(e.key==="Enter")$("enter-unlock").click()};
+function ensureServer(id,name){id=cleanId(id,"home");if(!servers[id]){servers[id]={name:name||id,channels:["general"],icon:""};saveServers()}return id}
+
+function renderServers(){
+  const el=$("servers");
+  el.innerHTML="";
+  Object.keys(servers).forEach(id=>{
+    const b=document.createElement("button");
+    b.className="srv"+(!activeDmUser&&id===serverId?" on":"");
+    b.title=servers[id].name;
+    if(servers[id].icon){
+      b.style.backgroundImage="url('"+servers[id].icon.replace(/'/g,"%27")+"')";
+      b.textContent="";
+    }else{
+      b.style.backgroundImage="";
+      b.textContent=(servers[id].name||id).slice(0,2).toUpperCase();
+    }
+    b.onclick=()=>switchServer(id);
+    el.appendChild(b);
+  });
+  const sep=document.createElement("div");
+  sep.className="srv-sep";
+  el.appendChild(sep);
+  const add=document.createElement("button");
+  add.className="srv add";
+  add.title="join / create server";
+  add.textContent="+";
+  add.onclick=()=>$("modal-server").classList.add("on");
+  el.appendChild(add);
+}
+
+function renderChannels(){
+  const s=servers[serverId];
+  if(!s)return;
+  $("server-name").textContent=s.name;
+  
+  const canManage = canManageHomeServer();
+  $("btn-add-channel").style.display = canManage ? "block" : "none";
+
+  const list=$("channel-list");
+  list.innerHTML='<div class="cat"><span>text channels</span>'+(canManage?'<button type="button" id="btn-add-channel-2">+</button>':'')+'</div>';
+  
+  s.channels.forEach(c=>{
+    const wrap=document.createElement("div");
+    wrap.className="ch-wrap"+(!activeDmUser&&c===channelId?" on":"");
+    
+    const b=document.createElement("button");
+    b.className="ch"+(c==="announcements"?" locked":"");
+    b.innerHTML='<span class="hash">#</span> <span class="ch-name">'+escape(c)+'</span>';
+    b.onclick=()=>switchChannel(c);
+    wrap.appendChild(b);
+
+    if(canManage){
+      const editBtn=document.createElement("button");
+      editBtn.className="ch-edit-btn";
+      editBtn.innerHTML="✏️";
+      editBtn.title="edit channel";
+      editBtn.onclick=(e)=>{
+        e.stopPropagation();
+        targetEditChannel=c;
+        $("modal-edit-channel-name").value=c;
+        $("modal-edit-channel").classList.add("on");
+      };
+      wrap.appendChild(editBtn);
+    }
+
+    list.appendChild(wrap);
+  });
+
+  const addBtn=$("btn-add-channel-2");
+  if(addBtn){
+    addBtn.onclick=()=>{
+      if(!canManageHomeServer()){
+        toast("only risk can add channels to home");
+        return;
+      }
+      $("modal-channel").classList.add("on");
+    };
+  }
+
+  // Render Direct Messages Section
+  const dmCat=document.createElement("div");
+  dmCat.className="cat";
+  dmCat.style.marginTop="12px";
+  dmCat.innerHTML='<span>direct messages</span>';
+  list.appendChild(dmCat);
+
+  dmList.forEach(u=>{
+    const wrap=document.createElement("div");
+    wrap.className="ch-wrap"+(activeDmUser===u?" on":"");
+    const b=document.createElement("button");
+    b.className="ch";
+    b.innerHTML='<span class="hash">@</span> <span class="ch-name">'+escape(u)+'</span>';
+    b.onclick=()=>openDm(u);
+    wrap.appendChild(b);
+    list.appendChild(wrap);
+  });
+}
+
+function openDm(targetNick){
+  const u=String(targetNick).toLowerCase();
+  if(u===nick.toLowerCase())return toast("cannot DM yourself");
+  if(isBlocked(u))return toast("unblock @"+u+" to send DMs");
+  addDmUser(u);
+  activeDmUser=u;
+  renderServers();
+  renderChannels();
+  connectChannel();
+}
+
+function switchServer(id){activeDmUser=null;serverId=ensureServer(id);const s=servers[serverId];if(!s.channels.includes(channelId))channelId=s.channels[0]||"general";renderServers();renderChannels();connectChannel()}
+function switchChannel(c){activeDmUser=null;channelId=cleanId(c,"general");const s=servers[serverId];if(!s.channels.includes(channelId)){s.channels.push(channelId);saveServers()}renderChannels();connectChannel()}
+function wsChannelName(){
+  if(activeDmUser){
+    return dmChannelRoom(nick, activeDmUser);
+  }
+  return"anonroom-s-"+serverId+"-c-"+channelId
+}
+function updateHeader(){
+  if(activeDmUser){
+    $("ch-prefix").textContent="@";
+    $("channel-title").textContent=activeDmUser;
+    msg.placeholder="Message @"+activeDmUser;
+    history.replaceState(null,"","#dm/"+encodeURIComponent(activeDmUser));
+  } else {
+    $("ch-prefix").textContent="#";
+    $("channel-title").textContent=channelId;
+    msg.placeholder="Message #"+channelId;
+    history.replaceState(null,"","#"+encodeURIComponent(serverId)+"/"+encodeURIComponent(channelId));
+  }
+}
+function enterApp(){if(checkMyBan())return;servers=loadServers();serverId=ensureServer(serverId);if(hash&&hash.includes("/")){const p=hash.split("/");if(p[1])channelId=cleanId(decodeURIComponent(p[1]),"general")}if(!servers[serverId].channels.includes(channelId))channelId=servers[serverId].channels[0]||"general";$("join").style.display="none";$("app").classList.add("on");loadMyProfile();if(!displayName)displayName=nick;updateUa();$("copy-id-btn").style.display=userId?"":"none";if(isDev){$("dev-bar").classList.add("on");updatePassDisplay()}else{$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on")}if(userId&&localStorage.getItem("anonroom_modpanel")===userId){hasModPanel=true;$("mod-panel-bar").classList.add("on")}saveSession();renderServers();renderChannels();startPresence();connectChannel()}
+function forceLogout(reason){
+  try{saveMyProfile();saveBadgeMap();saveRoleMap();savePublicCache()}catch(e){}
+  clearSession();
+  if(ch)try{ch.close()}catch(e){}
+  stopPresence();
+  log.innerHTML="";
+  $("app").classList.remove("on");
+  $("join").style.display="flex";
+  $("dev-bar").classList.remove("on");
+  $("dev-panel").classList.remove("on");
+  $("mod-panel-bar").classList.remove("on");
+  $("members").classList.remove("on");
+  isDev=false;hasModPanel=false;userId=null;nick="";
+  $("guest-nick").value=randNick();
+  $("twofa-step").classList.remove("on");
+  $("unlock-step").style.display="none";
+  $("login-form").style.display="block";
+  history.replaceState(null,"",location.pathname);
+  if(reason)toast(reason);
+}
+function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}renderHistory();saveSession();ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();const roomLabel = activeDmUser ? ("DM @"+activeDmUser) : ("#"+channelId);addSys("joined "+roomLabel+(userId?" · id #"+userId:"")+(isDev?" (dev)":""),{skipPersist:true});ch.send({type:"sys",text:nick+" joined "+roomLabel+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;saveBadgeMap();}if(p.nick===nick)return;if(isBlocked(p.nick))return;addMsg(p.nick,p.text,false,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges,bio:p.bio});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="logall"){addSys("everyone logged out by "+(p.by||"someone"),{skipPersist:true});setTimeout(()=>forceLogout("logged out (/log all)"),400)}else if(p.type==="mod")handleMod(p)})}
+let audioCtx=null;
+function playPingSound(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);if(audioCtx.state==="suspended")audioCtx.resume();const now=audioCtx.currentTime;[0,0.12].forEach((delay,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type="sine";osc.frequency.value=i===0?880:1175;gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(0.2,now+delay+0.02);gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.15);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now+delay);osc.stop(now+delay+0.16)})}catch(e){}}
+function isMentioned(text,myNick){if(!myNick||!text)return false;return new RegExp("(^|\\s)@"+myNick.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")+"\\b","i").test(text)}
+
+// Discord Formatting Parser
+function parseDiscordMarkdown(text) {
+  let str = escape(text);
+
+  // Code Block ```code```
+  const codeBlocks = [];
+  str = str.replace(/```(?:[a-z0-9]+)?\n?([\s\S]*?)```/g, (m, code) => {
+    codeBlocks.push(code);
+    return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
+  });
+
+  // Inline Code `code`
+  const inlineCodes = [];
+  str = str.replace(/`([^`\n]+)`/g, (m, code) => {
+    inlineCodes.push(code);
+    return `___INLINE_CODE_${inlineCodes.length - 1}___`;
+  });
+
+  // Spoilers ||spoiler||
+  str = str.replace(/\|\|([\s\S]+?)\|\|/g, '<span class="fmt-spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
+
+  // Headings & Subtext
+  str = str.replace(/^# (.*$)/gm, '<div class="fmt-h1">$1</div>');
+  str = str.replace(/^## (.*$)/gm, '<div class="fmt-h2">$1</div>');
+  str = str.replace(/^### (.*$)/gm, '<div class="fmt-h3">$1</div>');
+  str = str.replace(/^-# (.*$)/gm, '<div class="fmt-subtext">$1</div>');
+
+  // Quotes > quote
+  str = str.replace(/^&gt; (.*$)/gm, '<div class="fmt-quote">$1</div>');
+
+  // Bold ***bold* -> *** or **bold**
+  str = str.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  str = str.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Underline __underline__
+  str = str.replace(/__([^_]+)__/g, '<u>$1</u>');
+
+  // Italic *italic* or _italic_
+  str = str.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  str = str.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+  // Strikethrough ~~strike~~
+  str = str.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+
+  // Mentions
+  str = str.replace(/(^|\s)(@[a-zA-Z0-9_]+)/g, (m, sp, tag) => sp + '<span class="mention">' + tag + '</span>');
+
+  // Restore Inline Code
+  str = str.replace(/___INLINE_CODE_(\d+)___/g, (m, idx) => '<code class="fmt-code-inline">' + inlineCodes[idx] + '</code>');
+
+  // Restore Code Block
+  str = str.replace(/___CODE_BLOCK_(\d+)___/g, (m, idx) => '<pre class="fmt-code-block">' + codeBlocks[idx] + '</pre>');
+
+  return str;
+}
+
+function roleBadgeHtml(uid){if(!uid)return"";const r=roleMap[String(uid).toUpperCase()];if(!r)return"";return'<span class="role-badge '+escape(r)+'">['+escape(r)+"]</span>"}
+function addMsg(who,text,me,wasDev,uid,meta,opts){
+  meta=meta||{};opts=opts||{};
+  const ts=opts.ts||Date.now();
+  const skipPersist=!!opts.skipPersist;
+  const fromHistory=!!opts.fromHistory;
+  
+  if(!me && isBlocked(who))return;
+
+  const d=document.createElement("div");
+  d.className="m row-msg"+(me?" me":"");
+  if(!me&&!fromHistory&&isMentioned(text,nick)){d.classList.add("pinged");playPingSound()}
+  const showName=me?(displayName||nick):(meta.displayName||who);
+  const av=me?avatarUrl:(meta.avatar||"");
+  const bads=me?profileBadges:(meta.badges||badgesForUser(who,uid));
+  if(!me){
+    cachePublicProfile(who,{displayName:meta.displayName||who,avatar:meta.avatar||"",bio:meta.bio||"",badges:bads,uid:uid||null});
+    if(!fromHistory)savePublicCache();
+  }
+  const uname=me?nick:who;
+  const body=document.createElement("div");
+  body.className="mbody";
+  body.innerHTML='<div class="who"><span class="who-name" data-user="'+escape(uname)+'">'+escape(me?"you":showName)+'</span> '+badgesHtml(bads)+roleBadgeHtml(uid)+'<span class="t">'+time(ts)+"</span></div>"+parseDiscordMarkdown(text);
+  d.innerHTML=avatarHtml(av,showName,"avatar");
+  d.appendChild(body);
+  const nameEl=body.querySelector(".who-name");
+  if(nameEl)nameEl.onclick=e=>{e.stopPropagation();showPublicProfile(nameEl.getAttribute("data-user"))};
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+  if(!skipPersist&&!fromHistory){
+    persistMsg({kind:"chat",who,text,me:!!me,wasDev:!!wasDev,uid:uid||null,displayName:meta.displayName||who,avatar:meta.avatar||"",badges:bads||[],bio:meta.bio||"",ts});
+  }
+}
+function addSys(t,opts){
+  opts=opts||{};
+  const ts=opts.ts||Date.now();
+  const d=document.createElement("div");
+  d.className="sys";
+  d.textContent=t;
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+  if(!opts.skipPersist&&!opts.fromHistory){
+    persistMsg({kind:"sys",text:t,ts});
+  }
+}
+function addRainbow(text,opts){
+  if(!text)return;
+  opts=opts||{};
+  const ts=opts.ts||Date.now();
+  const d=document.createElement("div");
+  d.className="rainbow-announce";
+  d.textContent=text;
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+  if(!opts.skipPersist&&!opts.fromHistory){
+    persistMsg({kind:"rainbow",text,ts});
+  }
+}
+function renderHistory(){
+  log.innerHTML="";
+  const list=loadMsgHistory(serverId,channelId);
+  if(!list.length)return;
+  list.forEach(entry=>{
+    if(!entry||!entry.kind)return;
+    if(entry.kind==="chat"){
+      const me=entry.me||(entry.who===nick);
+      addMsg(entry.who,entry.text,me,entry.wasDev,entry.uid,{
+        displayName:entry.displayName,
+        avatar:entry.avatar,
+        badges:entry.badges,
+        bio:entry.bio
+      },{fromHistory:true,ts:entry.ts,skipPersist:true});
+    }else if(entry.kind==="sys"){
+      addSys(entry.text,{fromHistory:true,ts:entry.ts,skipPersist:true});
+    }else if(entry.kind==="rainbow"){
+      addRainbow(entry.text,{fromHistory:true,ts:entry.ts,skipPersist:true});
+    }
+  });
+}
+function send(){
+  const t=msg.value.trim();
+  if(!t||!ch)return;
+  if(t.toLowerCase()==="/log all"){
+    msg.value="";msg.style.height="auto";
+    ch.send({type:"logall",by:nick,uid:userId||undefined});
+    addSys("everyone logged out by "+nick,{skipPersist:true});
+    setTimeout(()=>forceLogout("logged out (/log all)"),400);
+    return;
+  }
+  if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}
+  const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[],bio:bio||""};
+  ch.send(payload);
+  addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges,bio:bio});
+  msg.value="";msg.style.height="auto";msg.focus();
+}
+sendBtn.onclick=send;msg.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
+function sendMod(action,extra){if(!ch||!isDev)return;const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();if(!targetUid)return toast("need a user id");ch.send(Object.assign({type:"mod",action,targetUid,by:nick,byUid:userId},extra||{}));addSys("[mod] "+action+" → #"+targetUid);toast(action+" sent")}
+function handleMod(p){if(!p||p.type!=="mod")return;const tid=(p.targetUid||"").toUpperCase();if(p.action==="ban"){applyBan(tid,null);addSys("#"+tid+" banned by "+(p.by||"mod"));if(userId&&userId.toUpperCase()===tid){alert("you have been banned");$("leave").click()}}else if(p.action==="suspend"){applyBan(tid,Date.now()+(p.ms||600000));addSys("#"+tid+" suspended");if(userId&&userId.toUpperCase()===tid){alert("suspended 10 minutes");$("leave").click()}}else if(p.action==="unban"){clearBan(tid);addSys("#"+tid+" unbanned")}else if(p.action==="role"){if(p.role)roleMap[tid]=p.role;else delete roleMap[tid];saveRoleMap();addSys("#"+tid+" role → "+(p.role||"none"))}else if(p.action==="panel"){addSys("#"+tid+" given mod panel");if(userId&&userId.toUpperCase()===tid){hasModPanel=true;localStorage.setItem("anonroom_modpanel",userId);$("mod-panel-bar").classList.add("on");toast("mod panel granted")}}else if(p.action==="revoke_panel"){if(userId&&userId.toUpperCase()===tid){hasModPanel=false;localStorage.removeItem("anonroom_modpanel");$("mod-panel-bar").classList.remove("on")}}else if(p.action==="rainbow")addRainbow(p.text||"");else if(p.action==="badges"){const list=Array.isArray(p.badges)?p.badges:[];const uname=(p.targetUser||"").toLowerCase();if(uname)badgeMap["user:"+uname]=list;if(tid)badgeMap[tid]=list;saveBadgeMap();const label=uname||("#"+tid);addSys(label+" badges updated ("+list.length+")");if((uname&&nick.toLowerCase()===uname)||(userId&&userId.toUpperCase()===tid)){profileBadges=list;saveMyProfile();updateUa()}}}
+function presenceKey(){return(userId||nick)+"|"+nick}
+function renderOnline(){
+  const keys=Object.keys(onlineMap).sort((a,b)=>(onlineMap[a].nick||"").localeCompare(onlineMap[b].nick||""));
+  $("online-count").textContent=keys.length;
+  const list=$("online-list");
+  if(!keys.length){list.innerHTML='<div style="color:#6d6f78;padding:8px;font-size:0.8rem">nobody yet</div>';return}
+  
+  list.innerHTML="";
+  keys.forEach(k=>{
+    const p=onlineMap[k];
+    if(isBlocked(p.nick))return;
+    const me=k===myPresenceKey?" ome":"";
+    
+    const div=document.createElement("div");
+    div.className="op"+me;
+    div.onclick=()=>showPublicProfile(p.nick);
+    
+    const info=document.createElement("span");
+    info.innerHTML=escape(p.nick)+(p.dev?' <span style="color:#8a9">[dev]</span>':"");
+    div.appendChild(info);
+
+    if(k!==myPresenceKey){
+      const actions=document.createElement("div");
+      actions.className="op-actions";
+      
+      const dmBtn=document.createElement("button");
+      dmBtn.className="op-btn";
+      dmBtn.textContent="DM";
+      dmBtn.onclick=(e)=>{
+        e.stopPropagation();
+        openDm(p.nick);
+      };
+      
+      actions.appendChild(dmBtn);
+      div.appendChild(actions);
+    }
+    
+    list.appendChild(div);
+  });
+}
+function announcePresence(kind){if(!presenceCh||!nick)return;myPresenceKey=presenceKey();presenceCh.send({type:kind||"here",key:myPresenceKey,nick,uid:userId,dev:isDev,room:"****"})}
+function startPresence(){stopPresence();onlineMap={};presenceCh=connect("anonroom-presence-v1",{as:nick});presenceCh.on("open",()=>{announcePresence("here");presenceCh.send({type:"who"})});presenceCh.on("message",ev=>{const m=ev.message;if(!m||typeof m!=="object")return;if(m.type==="here"||m.type==="ping"){if(!m.key||!m.nick)return;onlineMap[m.key]={nick:m.nick,uid:m.uid,dev:!!m.dev,last:Date.now()};renderOnline()}else if(m.type==="gone"&&m.key){delete onlineMap[m.key];renderOnline()}else if(m.type==="who")announcePresence("here")});presenceTimer=setInterval(()=>{announcePresence("ping");const now=Date.now();Object.keys(onlineMap).forEach(k=>{if(now-(onlineMap[k].last||0)>70000)delete onlineMap[k]});renderOnline()},25000);renderOnline()}
+function stopPresence(){if(presenceTimer)clearInterval(presenceTimer);presenceTimer=null;if(presenceCh){try{presenceCh.send({type:"gone",key:myPresenceKey,nick});presenceCh.close()}catch(e){}presenceCh=null}onlineMap={}}
+
+$("server-name").onclick=()=>{
+  if(!canManageHomeServer()){
+    toast("only risk can modify server settings for home");
+    return;
+  }
+  const s=servers[serverId];
+  if(!s)return;
+  $("modal-edit-server-name").value=s.name||serverId;
+  $("modal-edit-server-icon").value=s.icon||"";
+  $("modal-edit-server").classList.add("on");
+};
+
+$("modal-edit-server-ok").onclick=()=>{
+  if(!canManageHomeServer()){
+    toast("only risk can modify server settings for home");
+    $("modal-edit-server").classList.remove("on");
+    return;
+  }
+  const s=servers[serverId];
+  if(!s)return;
+  const newName=$("modal-edit-server-name").value.trim();
+  const newIcon=$("modal-edit-server-icon").value.trim();
+  if(newName)s.name=newName;
+  s.icon=newIcon;
+  saveServers();
+  renderServers();
+  renderChannels();
+  $("modal-edit-server").classList.remove("on");
+  toast("server settings saved");
+};
+$("modal-edit-server-cancel").onclick=()=>$("modal-edit-server").classList.remove("on");
+
+$("btn-add-channel").onclick=()=>{
+  if(!canManageHomeServer()){
+    toast("only risk can add channels to home");
+    return;
+  }
+  $("modal-channel").classList.add("on");
+};
+
+$("modal-server-ok").onclick=()=>{
+  const name=cleanId($("modal-server-name").value,"");
+  if(!name)return toast("enter a name");
+  ensureServer(name,name);
+  $("modal-server").classList.remove("on");
+  $("modal-server-name").value="";
+  switchServer(name);
+};
+$("modal-server-cancel").onclick=()=>$("modal-server").classList.remove("on");
+
+$("modal-channel-ok").onclick=()=>{
+  if(!canManageHomeServer()){
+    toast("only risk can add channels to home");
+    $("modal-channel").classList.remove("on");
+    return;
+  }
+  const name=cleanId($("modal-channel-name").value,"");
+  if(!name)return toast("enter a name");
+  const s=servers[serverId];
+  if(!s.channels.includes(name)){
+    s.channels.push(name);
+    saveServers();
+  }
+  $("modal-channel").classList.remove("on");
+  $("modal-channel-name").value="";
+  switchChannel(name);
+};
+$("modal-channel-cancel").onclick=()=>$("modal-channel").classList.remove("on");
+
+$("modal-edit-channel-ok").onclick=()=>{
+  if(!canManageHomeServer()){
+    toast("only risk can edit channels on home");
+    $("modal-edit-channel").classList.remove("on");
+    return;
+  }
+  const newName=cleanId($("modal-edit-channel-name").value,"");
+  if(!newName)return toast("enter a channel name");
+  const s=servers[serverId];
+  if(s&&targetEditChannel){
+    const idx=s.channels.indexOf(targetEditChannel);
+    if(idx!==-1){
+      s.channels[idx]=newName;
+      saveServers();
+      if(channelId===targetEditChannel){
+        channelId=newName;
+      }
+      renderChannels();
+      updateHeader();
+    }
+  }
+  $("modal-edit-channel").classList.remove("on");
+  toast("channel updated");
+};
+$("modal-edit-channel-cancel").onclick=()=>$("modal-edit-channel").classList.remove("on");
+
+$("online-btn").onclick=()=>$("members").classList.toggle("on");
+$("rules-btn").onclick=()=>$("rules-panel").classList.add("on");
+$("close-rules").onclick=()=>$("rules-panel").classList.remove("on");
+$("rules-panel").onclick=e=>{if(e.target===$("rules-panel"))$("rules-panel").classList.remove("on")};
+$("copy").onclick=()=>{
+  let url = location.origin+location.pathname;
+  if(activeDmUser){
+    url += "#dm/" + encodeURIComponent(activeDmUser);
+  } else {
+    url += "#" + encodeURIComponent(serverId) + "/" + encodeURIComponent(channelId);
+  }
+  navigator.clipboard.writeText(url).then(()=>toast("invite link copied")).catch(()=>prompt("copy:",url))
+};
+$("copy-id-btn").onclick=()=>{if(!userId)return toast("no id");navigator.clipboard.writeText(userId).then(()=>toast("id copied")).catch(()=>prompt("id:",userId))};
+$("leave").onclick=()=>{
+  try{saveMyProfile();saveBadgeMap();saveRoleMap();savePublicCache()}catch(e){}
+  clearSession();
+  if(ch)try{ch.send({type:"sys",text:nick+" left"});ch.close()}catch(e){}
+  stopPresence();
+  log.innerHTML="";
+  $("app").classList.remove("on");
+  $("join").style.display="flex";
+  $("dev-bar").classList.remove("on");
+  $("dev-panel").classList.remove("on");
+  $("mod-panel-bar").classList.remove("on");
+  $("members").classList.remove("on");
+  isDev=false;hasModPanel=false;userId=null;nick="";
+  $("guest-nick").value=randNick();
+  $("twofa-step").classList.remove("on");
+  $("unlock-step").style.display="none";
+  $("login-form").style.display="block";
+  history.replaceState(null,"",location.pathname);
+};
+if(window.innerWidth<=720)$("btn-toggle-sidebar").style.display="";
+$("btn-toggle-sidebar").onclick=()=>$("sidebar").classList.toggle("mobile-on");
+function updatePassDisplay(){if(!isDev)return;const left=Math.ceil((120000-(Date.now()%120000))/1000);$("dev-pass-display").textContent=getCurrentDevPass()+"  ·  "+left+"s left"}
+setInterval(updatePassDisplay,1000);
+$("dev-toggle-panel").onclick=()=>$("dev-panel").classList.toggle("on");
+$("dev-close-panel").onclick=()=>$("dev-panel").classList.remove("on");
+$("dev-clear").onclick=()=>{log.innerHTML="";clearMsgHistory(serverId,channelId);addSys("log cleared",{skipPersist:true});toast("history cleared")};
+$("mod-clear-log").onclick=()=>{log.innerHTML="";clearMsgHistory(serverId,channelId);addSys("log cleared",{skipPersist:true});toast("history cleared")};
+$("dev-info").onclick=()=>addSys("server: "+serverId+" · #"+channelId+" · "+nick+" · id: "+(userId||"none"));
+$("dev-webhook").onclick=()=>sendPassToDiscord(true);
+$("dev-sys").onclick=()=>{$("dev-panel").classList.add("on");$("dev-sys-text").focus()};
+$("dev-sys-send").onclick=()=>{const t=$("dev-sys-text").value.trim();if(!t||!ch)return;ch.send({type:"sys",text:"[dev] "+t});addSys("[dev] "+t);$("dev-sys-text").value=""};
+$("dev-copy-pass").onclick=()=>{const p=getCurrentDevPass();navigator.clipboard.writeText(p).then(()=>toast("copied")).catch(()=>prompt("pass:",p))};
+$("dev-refresh-pass").onclick=()=>{updatePassDisplay();toast("refreshed")};
+$("dev-rainbow-send").onclick=()=>{const t=$("dev-rainbow-text").value.trim();if(!t||!ch||!isDev)return;ch.send({type:"rainbow",text:t.slice(0,200),by:nick});addRainbow(t);$("dev-rainbow-text").value=""};
+$("dev-ban").onclick=()=>sendMod("ban");
+$("dev-suspend").onclick=()=>sendMod("suspend",{ms:600000});
+$("dev-unban").onclick=()=>sendMod("unban");
+$("dev-role-mod").onclick=()=>sendMod("role",{role:"mod"});
+$("dev-role-vip").onclick=()=>sendMod("role",{role:"vip"});
+$("dev-role-clear").onclick=()=>sendMod("role",{role:null});
+$("dev-give-panel").onclick=()=>sendMod("panel");
+$("dev-revoke-panel").onclick=()=>sendMod("revoke_panel");
+
+$("user-area").addEventListener("click",()=>{
+  $("set-username").value=nick;
+  $("set-display").value=displayName||nick;
+  $("set-bio").value=bio||"";
+  $("set-avatar").value=avatarUrl||"";
+  const prev=$("set-avatar-preview");
+  if(avatarUrl){prev.style.backgroundImage="url('"+avatarUrl.replace(/'/g,"%27")+"')";prev.textContent=""}
+  else{prev.style.backgroundImage="";prev.textContent=(displayName||nick||"?").slice(0,1).toUpperCase()}
+  $("set-badges").innerHTML=profileBadges&&profileBadges.length?badgesHtml(profileBadges):"none (dev can grant)";
+  $("settings-modal").classList.add("on");
+});
+$("settings-cancel").onclick=()=>$("settings-modal").classList.remove("on");
+$("settings-modal").onclick=e=>{if(e.target===$("settings-modal"))$("settings-modal").classList.remove("on")};
+$("set-avatar").oninput=()=>{
+  const v=$("set-avatar").value.trim();
+  const prev=$("set-avatar-preview");
+  if(v){prev.style.backgroundImage="url('"+v.replace(/'/g,"%27")+"')";prev.textContent=""}
+  else{prev.style.backgroundImage="";prev.textContent=(displayName||nick||"?").slice(0,1).toUpperCase()}
+};
+$("set-avatar-file").onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  if(f.size>400000){toast("image too large (max ~400kb)");return}
+  const reader=new FileReader();
+  reader.onload=()=>{$("set-avatar").value=reader.result;const ev=new Event("input");$("set-avatar").dispatchEvent(ev)};
+  reader.readAsDataURL(f);
+};
+$("settings-save").onclick=()=>{
+  displayName=($("set-display").value.trim()||nick).slice(0,32);
+  avatarUrl=$("set-avatar").value.trim();
+  bio=$("set-bio").value.trim().slice(0,160);
+  saveMyProfile();
+  updateUa();
+  $("settings-modal").classList.remove("on");
+  toast("profile saved");
+};
+let pendingBadgeIcon="";
+$("dev-badge-icon").onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f){pendingBadgeIcon="";return}
+  if(f.size>200000){toast("icon max ~200kb");pendingBadgeIcon="";return}
+  const reader=new FileReader();
+  reader.onload=()=>{pendingBadgeIcon=reader.result;toast("icon ready")};
+  reader.readAsDataURL(f);
+};
+$("dev-add-badge").onclick=()=>{
+  if(!isDev)return;
+  const uname=($("dev-badge-user").value||"").trim().toLowerCase();
+  const bname=($("dev-badge-name").value||"").trim().slice(0,24);
+  if(!uname)return toast("need a username");
+  if(!bname)return toast("need a badge name");
+  const key="user:"+uname;
+  const list=(badgeMap[key]||[]).slice();
+  const entry={name:bname};
+  if(pendingBadgeIcon)entry.icon=pendingBadgeIcon;
+  const idx=list.findIndex(x=>(typeof x==="string"?x:x.name)===bname);
+  if(idx>=0)list[idx]=entry;else list.push(entry);
+  if(list.length>12)list.shift();
+  badgeMap[key]=list;saveBadgeMap();
+  if(ch)ch.send({type:"mod",action:"badges",targetUser:uname,badges:list,by:nick});
+  if(nick.toLowerCase()===uname){profileBadges=list;saveMyProfile();updateUa()}
+  addSys("[mod] badge \""+bname+"\" → @"+uname);
+  toast("badge added for "+uname);
+  $("dev-badge-name").value="";
+  pendingBadgeIcon="";
+  $("dev-badge-icon").value="";
+};
+$("dev-clear-badges").onclick=()=>{
+  if(!isDev)return;
+  const uname=($("dev-badge-user").value||"").trim().toLowerCase();
+  if(!uname)return toast("need a username");
+  const key="user:"+uname;
+  badgeMap[key]=[];saveBadgeMap();
+  if(ch)ch.send({type:"mod",action:"badges",targetUser:uname,badges:[],by:nick});
+  if(nick.toLowerCase()===uname){profileBadges=[];saveMyProfile();updateUa()}
+  addSys("[mod] badges cleared for @"+uname);
+  toast("cleared");
+};
+
+$("pub-close").onclick=()=>$("pub-profile").classList.remove("on");
+$("pub-profile").onclick=e=>{if(e.target===$("pub-profile"))$("pub-profile").classList.remove("on")};
+setInterval(()=>{if(ch&&$("app").classList.contains("on"))ch.open()},28000);
+if(isDevUnlocked())sendPassToDiscord(true);
+setInterval(()=>{if(isDevUnlocked())sendPassToDiscord(false)},30000);
+
+(function tryRestoreSession(){
+  const s=loadSession();
+  if(!s||!s.nick)return;
+  if(s.isDev&&!isDevUnlocked()){clearSession();return;}
+  nick=String(s.nick).slice(0,24);
+  userId=s.userId||null;
+  isDev=!!s.isDev;
+  serverId=cleanId(s.serverId,"home");
+  channelId=cleanId(s.channelId,"general");
+  activeDmUser=s.activeDmUser||null;
+  hasModPanel=!!s.hasModPanel;
+  try{enterApp()}catch(e){clearSession()}
+})();
+</script>
+</body>
+</html>
