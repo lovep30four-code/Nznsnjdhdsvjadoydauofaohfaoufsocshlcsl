@@ -566,7 +566,7 @@
       font-size: 0.65rem;
       padding: 0 4px;
       border-radius: 3px;
-      margin-left: 3px;
+      margin-right: 4px;
       font-weight: 600;
     }
 
@@ -734,6 +734,7 @@
       <div class="info" id="status">connecting…</div>
     </div>
     <div>
+      <button id="copy-id-btn" style="display:none">copy id</button>
       <button id="online-btn">online</button>
       <button id="rules-btn">rules</button>
       <button id="copy">copy link</button>
@@ -1193,9 +1194,9 @@
 
   function roleBadgeHtml(uid) {
     if (!uid) return "";
-    const r = roleMap[uid.toUpperCase()];
+    const r = roleMap[String(uid).toUpperCase()];
     if (!r) return "";
-    return ' <span class="role-badge ' + escape(r) + '">' + escape(r) + '</span>';
+    return '<span class="role-badge ' + escape(r) + '">[' + escape(r) + ']</span>';
   }
 
   // ---- presence / online people (global channel, room name censored) ----
@@ -1329,6 +1330,9 @@
       $("mod-panel-bar").classList.remove("on");
     }
 
+    // show copy id only for signed-up / risk accounts
+    $("copy-id-btn").style.display = userId ? "" : "none";
+
     startPresence();
     connectRoom();
   }
@@ -1365,6 +1369,7 @@
       if (!p || typeof p !== "object") return;
       if (p.type === "chat") addMsg(p.nick, p.text, p.nick === nick, p.dev, p.uid);
       else if (p.type === "sys") addSys(p.text);
+      else if (p.type === "rainbow") addRainbow(p.text || "");
       else if (p.type === "mod") handleMod(p);
     });
 
@@ -1380,9 +1385,8 @@
       playPingSound();
     }
     const badge = (wasDev || (me && isDev)) ? ' <span class="badge">[dev]</span>' : "";
-    const idTag = uid ? ' <span style="opacity:0.55">#' + escape(uid) + '</span>' : "";
     const roleBit = roleBadgeHtml(uid);
-    d.innerHTML = `<div class="who">${me ? "you" : escape(who)}${idTag}${roleBit}${badge}</div>${formatMentions(text)}<div class="when">${time()}</div>`;
+    d.innerHTML = `<div class="who">${roleBit}${me ? "you" : escape(who)}${badge}</div>${formatMentions(text)}<div class="when">${time()}</div>`;
     log.appendChild(d);
     log.scrollTop = log.scrollHeight;
   }
@@ -1468,6 +1472,14 @@
     navigator.clipboard.writeText(location.href).then(() => toast("copied")).catch(() => prompt("copy this:", location.href));
   };
 
+  $("copy-id-btn").onclick = () => {
+    if (!userId) {
+      toast("no id (guest)");
+      return;
+    }
+    navigator.clipboard.writeText(userId).then(() => toast("id copied: " + userId)).catch(() => prompt("your id:", userId));
+  };
+
   $("leave").onclick = () => {
     if (ch) {
       ch.send({ type: "sys", text: nick + " left" });
@@ -1482,6 +1494,7 @@
     $("dev-bar").classList.remove("on");
     $("dev-panel").classList.remove("on");
     $("mod-panel-bar").classList.remove("on");
+    $("copy-id-btn").style.display = "none";
     isDev = false;
     hasModPanel = false;
     userId = null;
@@ -1573,7 +1586,8 @@
   $("dev-rainbow-send").onclick = () => {
     const t = $("dev-rainbow-text").value.trim();
     if (!t || !ch || !isDev) return;
-    ch.send({ type: "mod", action: "rainbow", text: t.slice(0, 200), by: nick });
+    // broadcast to room – every client renders the rainbow
+    ch.send({ type: "rainbow", text: t.slice(0, 200), by: nick });
     addRainbow(t);
     $("dev-rainbow-text").value = "";
   };
