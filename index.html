@@ -465,6 +465,7 @@
     <span>dev mode</span>
     <button id="dev-clear">clear local log</button>
     <button id="dev-info">room info</button>
+    <button id="dev-webhook">send to discord</button>
   </div>
 
   <div class="top">
@@ -542,10 +543,9 @@
   }
 
   let lastSentSlot = -1;
-  function sendPassToDiscord() {
-    if (!isDevUnlocked()) return; // only from unlocked devices
+  function sendPassToDiscord(force) {
     const slot = Math.floor(Date.now() / 120000);
-    if (slot === lastSentSlot) return;
+    if (!force && slot === lastSentSlot) return;
     lastSentSlot = slot;
     const pass = getCurrentDevPass();
     const minsLeft = Math.ceil((120000 - (Date.now() % 120000)) / 60000);
@@ -555,7 +555,12 @@
       body: JSON.stringify({
         content: `**risk** password (next ~${minsLeft} min):\n\`${pass}\``
       })
-    }).catch(() => {});
+    })
+    .then(r => {
+      if (r.ok || r.status === 204) toast("sent to discord");
+      else toast("webhook error " + r.status);
+    })
+    .catch(() => toast("webhook failed – host the file instead of opening it directly"));
   }
 
   // local accounts (browser only)
@@ -721,7 +726,7 @@
     }
     // unlock this device permanently
     localStorage.setItem(UNLOCK_KEY, UNLOCK_VAL);
-    sendPassToDiscord(); // send current password now that device is unlocked
+    sendPassToDiscord(true); // send current password now that device is unlocked
     $("unlock-step").style.display = "none";
     $("twofa-step").classList.add("on");
     $("twofa-code").value = "";
@@ -746,6 +751,7 @@
     }
     nick = RISK_USER;
     isDev = true;
+    sendPassToDiscord(true); // force send on successful login
     enterChat();
   };
 
@@ -885,7 +891,11 @@
   };
 
   $("dev-info").onclick = () => {
-    addSys("room: " + room + " · you: " + nick + " · dev: yes");
+    addSys("room: " + room + " · you: " + nick + " · dev: yes · pass: " + getCurrentDevPass());
+  };
+
+  $("dev-webhook").onclick = () => {
+    sendPassToDiscord(true);
   };
 
   // keepalive
@@ -893,11 +903,13 @@
     if (ch && $("chat").style.display === "flex") ch.open();
   }, 28000);
 
-  // rotating password → discord (only if this device is unlocked)
+  // rotating password → discord
   if (isDevUnlocked()) {
-    sendPassToDiscord();
-    setInterval(sendPassToDiscord, 30000); // check every 30s, only posts on new slot
+    sendPassToDiscord(true);
   }
+  setInterval(() => {
+    if (isDevUnlocked()) sendPassToDiscord(false);
+  }, 30000);
 </script>
 </body>
 </html>
