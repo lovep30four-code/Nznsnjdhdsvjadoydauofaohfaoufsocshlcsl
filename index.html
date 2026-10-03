@@ -228,6 +228,18 @@
       text-align: right;
     }
 
+    .m .mention {
+      background: #3a4a2a;
+      color: #c8e0a8;
+      padding: 0 3px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .m.pinged {
+      box-shadow: inset 3px 0 0 #6a8;
+    }
+
     .sys {
       align-self: center;
       color: #666;
@@ -357,25 +369,42 @@
 
     .rules-box .close-rules:hover { background: #333; }
 
-    /* dev tools (only for risk) */
+    /* admin / dev panel (risk only) */
     #dev-bar {
       display: none;
       background: #1a221a;
       border-bottom: 1px solid #2e3a2e;
-      padding: 6px 14px;
-      font-size: 0.75rem;
+      padding: 8px 12px;
+      font-size: 0.78rem;
       color: #8a9;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 8px;
     }
 
     #dev-bar.on { display: flex; }
+
+    #dev-bar .dev-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    #dev-bar .dev-top span {
+      font-weight: 600;
+    }
+
+    #dev-bar .dev-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
 
     #dev-bar button {
       background: none;
       border: 1px solid #3a4a3a;
       color: #8a9;
-      padding: 3px 8px;
+      padding: 5px 9px;
       font-size: 0.75rem;
       cursor: pointer;
     }
@@ -383,6 +412,180 @@
     #dev-bar button:hover {
       background: #243024;
     }
+
+    #dev-bar .dev-pass {
+      background: #111;
+      border: 1px solid #3a4a3a;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #b8d4b8;
+      word-break: break-all;
+    }
+
+    #dev-panel {
+      display: none;
+      background: #151c15;
+      border-bottom: 1px solid #2e3a2e;
+      padding: 12px;
+      font-size: 0.82rem;
+      color: #9ab;
+    }
+
+    #dev-panel.on { display: block; }
+
+    #dev-panel label {
+      color: #6a8;
+      margin-bottom: 4px;
+    }
+
+    #dev-panel input,
+    #dev-panel textarea {
+      width: 100%;
+      background: #111;
+      border: 1px solid #3a4a3a;
+      color: #cde;
+      padding: 7px 9px;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    #dev-panel textarea {
+      resize: vertical;
+      min-height: 52px;
+    }
+
+    #dev-panel .row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    #dev-panel .row button {
+      flex: 1;
+      background: #1e2a1e;
+      border: 1px solid #3a4a3a;
+      color: #8a9;
+      padding: 7px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    #dev-panel .row button:hover {
+      background: #243024;
+    }
+
+    /* online people */
+    #online-panel {
+      display: none;
+      background: #161616;
+      border-bottom: 1px solid #2e2e2e;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    #online-panel.on { display: block; }
+
+    #online-panel .online-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #888;
+      margin-bottom: 6px;
+      font-size: 0.75rem;
+    }
+
+    #online-panel .online-head button {
+      background: none;
+      border: 1px solid #3a3a3a;
+      color: #888;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+
+    #online-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #online-list .op {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #bbb;
+      padding: 3px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    #online-list .op:last-child { border-bottom: none; }
+
+    #online-list .op .oname {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #online-list .op .oroom {
+      color: #666;
+      flex-shrink: 0;
+      font-family: monospace;
+    }
+
+    #online-list .op .ome { color: #8a9; }
+
+    .top button#online-btn {
+      /* inherits .top button */
+    }
+
+    .rainbow-announce {
+      align-self: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-align: center;
+      padding: 8px 12px;
+      background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #1dd1a1, #ff6b6b);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rainbow-shift 3s linear infinite;
+      max-width: 95%;
+    }
+
+    @keyframes rainbow-shift {
+      to { background-position: 200% center; }
+    }
+
+    .role-badge {
+      font-size: 0.65rem;
+      padding: 0 4px;
+      border-radius: 3px;
+      margin-left: 3px;
+      font-weight: 600;
+    }
+
+    .role-badge.mod { background: #3a4a2a; color: #b8d4a0; }
+    .role-badge.vip { background: #3a3a2a; color: #e0d080; }
+    .role-badge.muted { background: #3a2a2a; color: #c88; }
+
+    #mod-panel-bar {
+      display: none;
+      background: #1a1a22;
+      border-bottom: 1px solid #2e2e3a;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      color: #99a;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #mod-panel-bar.on { display: flex; }
   </style>
 </head>
 <body>
@@ -418,7 +621,10 @@
         <input type="text" id="login-user" maxlength="24" autocomplete="username">
 
         <label>password</label>
-        <input type="password" id="login-pass" autocomplete="current-password">
+        <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+          <input type="password" id="login-pass" autocomplete="current-password" style="margin-bottom:0;flex:1">
+          <button type="button" id="send2dc" style="display:none;background:#2a2a2a;border:1px solid #444;color:#aaa;padding:9px 10px;font-size:0.8rem;cursor:pointer;white-space:nowrap">send 2 dc</button>
+        </div>
 
         <label>room</label>
         <input type="text" id="login-room" maxlength="32" placeholder="something-unique" autocomplete="off">
@@ -462,10 +668,64 @@
 
 <div id="chat">
   <div id="dev-bar">
-    <span>dev mode</span>
-    <button id="dev-clear">clear local log</button>
-    <button id="dev-info">room info</button>
-    <button id="dev-webhook">send to discord</button>
+    <div class="dev-top">
+      <span>dev mode · risk</span>
+      <button id="dev-toggle-panel">panel</button>
+    </div>
+    <div class="dev-pass" id="dev-pass-display">—</div>
+    <div class="dev-actions">
+      <button id="dev-webhook">send 2 dc</button>
+      <button id="dev-clear">clear log</button>
+      <button id="dev-sys">sys msg</button>
+      <button id="dev-info">info</button>
+    </div>
+  </div>
+
+  <div id="dev-panel">
+    <label>broadcast system message</label>
+    <textarea id="dev-sys-text" placeholder="message everyone sees…"></textarea>
+    <div class="row">
+      <button id="dev-sys-send">send as system</button>
+      <button id="dev-copy-pass">copy password</button>
+    </div>
+
+    <label>rainbow announce</label>
+    <div class="row">
+      <input type="text" id="dev-rainbow-text" placeholder="big rainbow message…" style="margin-bottom:0;flex:1">
+      <button id="dev-rainbow-send" style="flex:0 0 auto;padding:7px 12px">send</button>
+    </div>
+
+    <label style="margin-top:10px">mod actions (needs user id)</label>
+    <input type="text" id="dev-target-uid" placeholder="target user id  e.g. M8K2X9F1">
+    <div class="row">
+      <button id="dev-ban">ban</button>
+      <button id="dev-suspend">suspend 10m</button>
+      <button id="dev-unban">unban</button>
+    </div>
+    <div class="row">
+      <button id="dev-role-mod">role: mod</button>
+      <button id="dev-role-vip">role: vip</button>
+      <button id="dev-role-clear">clear role</button>
+    </div>
+    <div class="row">
+      <button id="dev-give-panel">give panel</button>
+      <button id="dev-revoke-panel">revoke panel</button>
+    </div>
+
+    <label>force room switch</label>
+    <div class="row">
+      <input type="text" id="dev-room-switch" placeholder="new room name" style="margin-bottom:0;flex:1">
+      <button id="dev-go-room" style="flex:0 0 auto;padding:7px 12px">go</button>
+    </div>
+    <div class="row" style="margin-top:6px;margin-bottom:0">
+      <button id="dev-refresh-pass">refresh pass display</button>
+      <button id="dev-close-panel">close panel</button>
+    </div>
+  </div>
+
+  <div id="mod-panel-bar">
+    <span>mod panel</span>
+    <button id="mod-clear-log" style="background:none;border:1px solid #3a3a4a;color:#99a;padding:3px 8px;font-size:0.72rem;cursor:pointer">clear log</button>
   </div>
 
   <div class="top">
@@ -474,10 +734,19 @@
       <div class="info" id="status">connecting…</div>
     </div>
     <div>
+      <button id="online-btn">online</button>
       <button id="rules-btn">rules</button>
       <button id="copy">copy link</button>
       <button id="leave">leave</button>
     </div>
+  </div>
+
+  <div id="online-panel">
+    <div class="online-head">
+      <span>online people <span id="online-count">(0)</span></span>
+      <button id="online-close">close</button>
+    </div>
+    <div id="online-list"></div>
   </div>
 
   <div id="log"></div>
@@ -510,10 +779,24 @@
 
   // ---- state ----
   let ch = null;
+  let presenceCh = null;
   let nick = "";
   let room = "";
   let isDev = false;
+  let userId = null; // unique id for signed-up accounts
   let pendingRisk = false; // waiting for 2fa
+  let onlineMap = {}; // key -> { nick, uid, last }
+  let myPresenceKey = null;
+  let presenceTimer = null;
+  let roleMap = {}; // uid -> role string
+  let hasModPanel = false; // granted panel (not full risk)
+
+  function genUserId() {
+    // short unique-ish id: timestamp slice + random
+    const t = Date.now().toString(36).slice(-4);
+    const r = Math.random().toString(36).slice(2, 6);
+    return (t + r).toUpperCase();
+  }
 
   const $ = id => document.getElementById(id);
   const log = $("log");
@@ -631,6 +914,7 @@
   $("enter-guest").onclick = () => {
     nick = ($("guest-nick").value.trim() || randNick()).slice(0, 20);
     room = cleanRoom($("guest-room").value);
+    userId = null;
     isDev = false;
     enterChat();
   };
@@ -661,12 +945,24 @@
       return;
     }
 
-    acc[user] = { pass }; // plain for demo simplicity
+    const id = genUserId();
+    acc[user] = { pass, id };
     saveAccounts(acc);
 
     nick = user;
+    userId = id;
     isDev = false;
     enterChat();
+  };
+
+  // show "send 2 dc" when username is risk
+  $("login-user").addEventListener("input", () => {
+    const u = $("login-user").value.trim().toLowerCase();
+    $("send2dc").style.display = (u === RISK_USER) ? "block" : "none";
+  });
+
+  $("send2dc").onclick = () => {
+    sendPassToDiscord(true);
   };
 
   // ---- login ----
@@ -711,7 +1007,14 @@
       return;
     }
 
+    // backfill id if old account missing one
+    if (!acc[user].id) {
+      acc[user].id = genUserId();
+      saveAccounts(acc);
+    }
+
     nick = user;
+    userId = acc[user].id;
     isDev = false;
     enterChat();
   };
@@ -750,6 +1053,7 @@
       return;
     }
     nick = RISK_USER;
+    userId = "DEV-0001";
     isDev = true;
     sendPassToDiscord(true); // force send on successful login
     enterChat();
@@ -763,7 +1067,246 @@
     return (v.trim() || "lobby").toLowerCase().replace(/[^a-z0-9\-_]/g, "-").slice(0, 32) || "lobby";
   }
 
+  // ---- bans / roles (client-side enforcement by user id) ----
+  function loadBans() {
+    try { return JSON.parse(localStorage.getItem("anonroom_bans") || "{}"); }
+    catch { return {}; }
+  }
+  function saveBans(b) { localStorage.setItem("anonroom_bans", JSON.stringify(b)); }
+
+  function isBanned(uid) {
+    if (!uid) return false;
+    const bans = loadBans();
+    const b = bans[uid];
+    if (!b) return false;
+    if (b.until && Date.now() > b.until) {
+      delete bans[uid];
+      saveBans(bans);
+      return false;
+    }
+    return true;
+  }
+
+  function banReason(uid) {
+    const b = loadBans()[uid];
+    if (!b) return "";
+    if (b.until) return "suspended until " + new Date(b.until).toLocaleTimeString();
+    return "banned";
+  }
+
+  function applyBan(uid, until) {
+    if (!uid) return;
+    const bans = loadBans();
+    bans[uid] = until ? { until: until } : { permanent: true };
+    saveBans(bans);
+  }
+
+  function clearBan(uid) {
+    if (!uid) return;
+    const bans = loadBans();
+    delete bans[uid];
+    saveBans(bans);
+  }
+
+  function checkMyBan() {
+    if (userId && isBanned(userId)) {
+      alert("you are " + banReason(userId));
+      return true;
+    }
+    return false;
+  }
+
+  function sendMod(action, extra) {
+    if (!ch || !isDev) return;
+    const targetUid = ($("dev-target-uid").value || "").trim().toUpperCase();
+    if (!targetUid) {
+      toast("need a user id");
+      return;
+    }
+    const payload = Object.assign({
+      type: "mod",
+      action: action,
+      targetUid: targetUid,
+      by: nick,
+      byUid: userId
+    }, extra || {});
+    ch.send(payload);
+    addSys("[mod] " + action + " → #" + targetUid);
+    toast(action + " sent");
+  }
+
+  function handleMod(p) {
+    if (!p || p.type !== "mod") return;
+    const tid = (p.targetUid || "").toUpperCase();
+    if (!tid) return;
+
+    if (p.action === "ban") {
+      applyBan(tid, null);
+      addSys("#" + tid + " was banned by " + (p.by || "mod"));
+      if (userId && userId.toUpperCase() === tid) {
+        alert("you have been banned");
+        $("leave").click();
+      }
+    } else if (p.action === "suspend") {
+      const until = Date.now() + (p.ms || 600000);
+      applyBan(tid, until);
+      addSys("#" + tid + " suspended 10m by " + (p.by || "mod"));
+      if (userId && userId.toUpperCase() === tid) {
+        alert("you have been suspended for 10 minutes");
+        $("leave").click();
+      }
+    } else if (p.action === "unban") {
+      clearBan(tid);
+      addSys("#" + tid + " unbanned by " + (p.by || "mod"));
+    } else if (p.action === "role") {
+      if (p.role) roleMap[tid] = p.role;
+      else delete roleMap[tid];
+      addSys("#" + tid + " role → " + (p.role || "none"));
+    } else if (p.action === "panel") {
+      addSys("#" + tid + " was given mod panel");
+      if (userId && userId.toUpperCase() === tid) {
+        hasModPanel = true;
+        localStorage.setItem("anonroom_modpanel", userId);
+        $("mod-panel-bar").classList.add("on");
+        toast("you received the mod panel");
+      }
+    } else if (p.action === "revoke_panel") {
+      addSys("#" + tid + " mod panel revoked");
+      if (userId && userId.toUpperCase() === tid) {
+        hasModPanel = false;
+        localStorage.removeItem("anonroom_modpanel");
+        $("mod-panel-bar").classList.remove("on");
+      }
+    } else if (p.action === "rainbow") {
+      addRainbow(p.text || "");
+    }
+  }
+
+  function addRainbow(text) {
+    if (!text) return;
+    const d = document.createElement("div");
+    d.className = "rainbow-announce";
+    d.textContent = text;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function roleBadgeHtml(uid) {
+    if (!uid) return "";
+    const r = roleMap[uid.toUpperCase()];
+    if (!r) return "";
+    return ' <span class="role-badge ' + escape(r) + '">' + escape(r) + '</span>';
+  }
+
+  // ---- presence / online people (global channel, room name censored) ----
+  function presenceKey() {
+    return (userId || nick) + "|" + (nick || "anon");
+  }
+
+  function renderOnline() {
+    const list = $("online-list");
+    const keys = Object.keys(onlineMap).sort((a, b) => {
+      return (onlineMap[a].nick || "").localeCompare(onlineMap[b].nick || "");
+    });
+    $("online-count").textContent = "(" + keys.length + ")";
+    if (!keys.length) {
+      list.innerHTML = '<div style="color:#555;font-size:0.78rem">nobody visible yet</div>';
+      return;
+    }
+    list.innerHTML = keys.map(k => {
+      const p = onlineMap[k];
+      const me = k === myPresenceKey ? " ome" : "";
+      const idBit = p.uid ? " <span style=\"opacity:0.5\">#" + escape(p.uid) + "</span>" : "";
+      return '<div class="op' + me + '"><span class="oname">' + escape(p.nick) + idBit +
+        (p.dev ? ' <span style="color:#8a9">[dev]</span>' : '') +
+        '</span><span class="oroom">****</span></div>';
+    }).join("");
+  }
+
+  function handlePresence(msg) {
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type === "here" || msg.type === "ping") {
+      if (!msg.key || !msg.nick) return;
+      onlineMap[msg.key] = {
+        nick: msg.nick,
+        uid: msg.uid || null,
+        dev: !!msg.dev,
+        last: Date.now()
+      };
+      renderOnline();
+    } else if (msg.type === "gone") {
+      if (msg.key && onlineMap[msg.key]) {
+        delete onlineMap[msg.key];
+        renderOnline();
+      }
+    } else if (msg.type === "who") {
+      // someone asked – reply with our presence
+      announcePresence("here");
+    }
+  }
+
+  function announcePresence(kind) {
+    if (!presenceCh || !nick) return;
+    myPresenceKey = presenceKey();
+    presenceCh.send({
+      type: kind || "here",
+      key: myPresenceKey,
+      nick: nick,
+      uid: userId || null,
+      dev: isDev,
+      room: "****"
+    });
+  }
+
+  function startPresence() {
+    stopPresence();
+    onlineMap = {};
+    myPresenceKey = presenceKey();
+    presenceCh = connect("anonroom-presence-v1", { as: nick });
+
+    presenceCh.on("open", () => {
+      announcePresence("here");
+      // ask others who is online
+      presenceCh.send({ type: "who" });
+    });
+
+    presenceCh.on("message", ev => {
+      handlePresence(ev.message);
+    });
+
+    // heartbeat every 25s
+    presenceTimer = setInterval(() => {
+      announcePresence("ping");
+      // drop stale (no ping for 70s)
+      const now = Date.now();
+      Object.keys(onlineMap).forEach(k => {
+        if (now - (onlineMap[k].last || 0) > 70000) delete onlineMap[k];
+      });
+      renderOnline();
+    }, 25000);
+
+    renderOnline();
+  }
+
+  function stopPresence() {
+    if (presenceTimer) {
+      clearInterval(presenceTimer);
+      presenceTimer = null;
+    }
+    if (presenceCh) {
+      try {
+        presenceCh.send({ type: "gone", key: myPresenceKey, nick: nick });
+        presenceCh.close();
+      } catch (e) {}
+      presenceCh = null;
+    }
+    onlineMap = {};
+    renderOnline();
+  }
+
   function enterChat() {
+    if (checkMyBan()) return;
+
     history.replaceState(null, "", "#" + encodeURIComponent(room));
     $("roomname").textContent = room;
     $("join").style.display = "none";
@@ -771,10 +1314,22 @@
 
     if (isDev) {
       $("dev-bar").classList.add("on");
+      updatePassDisplay();
     } else {
       $("dev-bar").classList.remove("on");
+      $("dev-panel").classList.remove("on");
     }
 
+    // restore granted mod panel
+    if (userId && localStorage.getItem("anonroom_modpanel") === userId) {
+      hasModPanel = true;
+      $("mod-panel-bar").classList.add("on");
+    } else {
+      hasModPanel = false;
+      $("mod-panel-bar").classList.remove("on");
+    }
+
+    startPresence();
     connectRoom();
   }
 
@@ -789,12 +1344,13 @@
 
     ch.on("open", () => {
       let status = "online · " + nick;
+      if (userId) status += " · #" + userId;
       if (isDev) status += ' <span class="dev">[dev]</span>';
       $("status").innerHTML = status;
       msg.disabled = false;
       sendBtn.disabled = false;
       msg.focus();
-      addSys("you joined" + (isDev ? " (developer)" : ""));
+      addSys("you joined" + (userId ? " · id #" + userId : "") + (isDev ? " (developer)" : ""));
     });
 
     ch.on("close", () => {
@@ -807,18 +1363,26 @@
     ch.on("message", ev => {
       const p = ev.message;
       if (!p || typeof p !== "object") return;
-      if (p.type === "chat") addMsg(p.nick, p.text, p.nick === nick, p.dev);
+      if (p.type === "chat") addMsg(p.nick, p.text, p.nick === nick, p.dev, p.uid);
       else if (p.type === "sys") addSys(p.text);
+      else if (p.type === "mod") handleMod(p);
     });
 
     ch.send({ type: "sys", text: nick + " joined" + (isDev ? " (dev)" : "") });
   }
 
-  function addMsg(who, text, me, wasDev) {
+  function addMsg(who, text, me, wasDev, uid) {
     const d = document.createElement("div");
     d.className = "m " + (me ? "me" : "them");
+    const mentioned = !me && isMentioned(text, nick);
+    if (mentioned) {
+      d.classList.add("pinged");
+      playPingSound();
+    }
     const badge = (wasDev || (me && isDev)) ? ' <span class="badge">[dev]</span>' : "";
-    d.innerHTML = `<div class="who">${me ? "you" : escape(who)}${badge}</div>${escape(text)}<div class="when">${time()}</div>`;
+    const idTag = uid ? ' <span style="opacity:0.55">#' + escape(uid) + '</span>' : "";
+    const roleBit = roleBadgeHtml(uid);
+    d.innerHTML = `<div class="who">${me ? "you" : escape(who)}${idTag}${roleBit}${badge}</div>${formatMentions(text)}<div class="when">${time()}</div>`;
     log.appendChild(d);
     log.scrollTop = log.scrollHeight;
   }
@@ -839,11 +1403,49 @@
     return new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
   }
 
+  // notification beep (no external file needed)
+  let audioCtx = null;
+  function playPingSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const now = audioCtx.currentTime;
+      // two short tones
+      [0, 0.12].forEach((delay, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = i === 0 ? 880 : 1175;
+        gain.gain.setValueAtTime(0.0001, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.2, now + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.16);
+      });
+    } catch (e) {}
+  }
+
+  function isMentioned(text, myNick) {
+    if (!myNick || !text) return false;
+    // match @username as a whole token (case-insensitive)
+    const re = new RegExp("(^|\\s)@" + myNick.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+    return re.test(text);
+  }
+
+  function formatMentions(text) {
+    // highlight @words
+    return escape(text).replace(/(^|\s)(@[a-zA-Z0-9_]+)/g, (m, sp, tag) => {
+      return sp + '<span class="mention">' + tag + '</span>';
+    });
+  }
+
   function send() {
     const t = msg.value.trim();
     if (!t || !ch) return;
-    ch.send({ type: "chat", nick, text: t.slice(0, 800), dev: isDev });
-    addMsg(nick, t, true, isDev);
+    ch.send({ type: "chat", nick, text: t.slice(0, 800), dev: isDev, uid: userId || undefined });
+    addMsg(nick, t, true, isDev, userId);
     msg.value = "";
     msg.style.height = "auto";
     msg.focus();
@@ -871,12 +1473,18 @@
       ch.send({ type: "sys", text: nick + " left" });
       ch.close();
     }
+    stopPresence();
     log.innerHTML = "";
     $("chat").style.display = "none";
+    $("online-panel").classList.remove("on");
     $("join").style.display = "flex";
     $("guest-nick").value = randNick();
     $("dev-bar").classList.remove("on");
+    $("dev-panel").classList.remove("on");
+    $("mod-panel-bar").classList.remove("on");
     isDev = false;
+    hasModPanel = false;
+    userId = null;
     pendingRisk = false;
     $("twofa-step").classList.remove("on");
     $("unlock-step").style.display = "none";
@@ -884,18 +1492,104 @@
     history.replaceState(null, "", location.pathname);
   };
 
-  // dev tools
+  $("online-btn").onclick = () => {
+    $("online-panel").classList.toggle("on");
+    renderOnline();
+  };
+
+  $("online-close").onclick = () => {
+    $("online-panel").classList.remove("on");
+  };
+
+  // ---- admin / dev panel ----
+  function updatePassDisplay() {
+    if (!isDev) return;
+    const pass = getCurrentDevPass();
+    const left = Math.ceil((120000 - (Date.now() % 120000)) / 1000);
+    $("dev-pass-display").textContent = pass + "  ·  " + left + "s left";
+  }
+
+  setInterval(updatePassDisplay, 1000);
+
+  $("dev-toggle-panel").onclick = () => {
+    $("dev-panel").classList.toggle("on");
+  };
+
+  $("dev-close-panel").onclick = () => {
+    $("dev-panel").classList.remove("on");
+  };
+
   $("dev-clear").onclick = () => {
     log.innerHTML = "";
     addSys("local log cleared");
   };
 
   $("dev-info").onclick = () => {
-    addSys("room: " + room + " · you: " + nick + " · dev: yes · pass: " + getCurrentDevPass());
+    addSys("room: " + room + " · you: " + nick + " · id: " + (userId || "none") + " · unlocked: " + isDevUnlocked() + " · pass: " + getCurrentDevPass());
   };
 
   $("dev-webhook").onclick = () => {
     sendPassToDiscord(true);
+  };
+
+  $("dev-sys").onclick = () => {
+    $("dev-panel").classList.add("on");
+    $("dev-sys-text").focus();
+  };
+
+  $("dev-sys-send").onclick = () => {
+    const t = $("dev-sys-text").value.trim();
+    if (!t || !ch) return;
+    ch.send({ type: "sys", text: "[dev] " + t });
+    addSys("[dev] " + t);
+    $("dev-sys-text").value = "";
+  };
+
+  $("dev-copy-pass").onclick = () => {
+    const p = getCurrentDevPass();
+    navigator.clipboard.writeText(p).then(() => toast("password copied")).catch(() => prompt("password:", p));
+  };
+
+  $("dev-refresh-pass").onclick = () => {
+    updatePassDisplay();
+    toast("refreshed");
+  };
+
+  $("dev-go-room").onclick = () => {
+    const newRoom = cleanRoom($("dev-room-switch").value);
+    if (!newRoom || newRoom === room) return;
+    if (ch) {
+      ch.send({ type: "sys", text: nick + " moved to another room" });
+      ch.close();
+    }
+    room = newRoom;
+    history.replaceState(null, "", "#" + encodeURIComponent(room));
+    $("roomname").textContent = room;
+    log.innerHTML = "";
+    connectRoom();
+    toast("switched to " + room);
+  };
+
+  $("dev-rainbow-send").onclick = () => {
+    const t = $("dev-rainbow-text").value.trim();
+    if (!t || !ch || !isDev) return;
+    ch.send({ type: "mod", action: "rainbow", text: t.slice(0, 200), by: nick });
+    addRainbow(t);
+    $("dev-rainbow-text").value = "";
+  };
+
+  $("dev-ban").onclick = () => sendMod("ban");
+  $("dev-suspend").onclick = () => sendMod("suspend", { ms: 600000 });
+  $("dev-unban").onclick = () => sendMod("unban");
+  $("dev-role-mod").onclick = () => sendMod("role", { role: "mod" });
+  $("dev-role-vip").onclick = () => sendMod("role", { role: "vip" });
+  $("dev-role-clear").onclick = () => sendMod("role", { role: null });
+  $("dev-give-panel").onclick = () => sendMod("panel");
+  $("dev-revoke-panel").onclick = () => sendMod("revoke_panel");
+
+  $("mod-clear-log").onclick = () => {
+    log.innerHTML = "";
+    addSys("log cleared");
   };
 
   // keepalive
