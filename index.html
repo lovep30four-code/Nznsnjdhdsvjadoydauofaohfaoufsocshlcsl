@@ -163,6 +163,33 @@
       border: 1px solid #3f4147;
     }
     .badge-icon:hover .tip { opacity: 1; }
+    .who-name {
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .who-name:hover {
+      text-decoration: underline;
+      color: #fff;
+    }
+    #pub-profile .avatar-preview {
+      width: 80px; height: 80px; border-radius: 50%; background: #5865f2; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;
+      overflow: hidden; background-size: cover; background-position: center; color: #fff;
+    }
+    #pub-profile .pub-name {
+      text-align: center; font-size: 1.15rem; font-weight: 700; color: #f2f3f5; margin-bottom: 4px;
+    }
+    #pub-profile .pub-user {
+      text-align: center; font-size: 0.85rem; color: #949ba4; margin-bottom: 10px;
+    }
+    #pub-profile .pub-bio {
+      background: #2b2d31; border-radius: 6px; padding: 10px 12px; color: #dbdee1;
+      font-size: 0.9rem; line-height: 1.4; margin-bottom: 12px; min-height: 40px;
+    }
+    #pub-profile .pub-badges {
+      text-align: center; margin-bottom: 12px; min-height: 24px;
+    }
+
 
     #settings-modal .avatar-preview {
       width: 72px; height: 72px; border-radius: 50%; background: #5865f2; margin: 0 auto 12px;
@@ -358,6 +385,18 @@
   </div>
 </div>
 
+
+<div class="modal" id="pub-profile">
+  <div class="modal-box" style="max-width:340px">
+    <div class="avatar-preview" id="pub-avatar">?</div>
+    <div class="pub-name" id="pub-name">—</div>
+    <div class="pub-user" id="pub-user">@—</div>
+    <div class="pub-badges" id="pub-badges"></div>
+    <div class="pub-bio" id="pub-bio">no bio</div>
+    <button class="ok" id="pub-close" style="width:100%">close</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -430,6 +469,34 @@ function badgesForUser(username,uid){
   const byId=uid?badgeMap[String(uid).toUpperCase()]:null;
   return byUser||byId||[];
 }
+let publicCache={};
+function cachePublicProfile(username, data){
+  if(!username)return;
+  const key=String(username).toLowerCase();
+  publicCache[key]=Object.assign({}, publicCache[key]||{}, data||{}, {username:key, updated:Date.now()});
+}
+function showPublicProfile(username){
+  const key=String(username||"").toLowerCase();
+  if(!key)return;
+  const isMe=key===String(nick).toLowerCase();
+  let p=publicCache[key]||{};
+  if(isMe){
+    p={username:key, displayName:displayName||nick, avatar:avatarUrl||"", bio:bio||"", badges:profileBadges||[], uid:userId};
+  } else {
+    // merge badges from badge map
+    p.badges=p.badges||badgesForUser(key,p.uid)||[];
+  }
+  const name=p.displayName||p.username||key;
+  const av=$("pub-avatar");
+  if(p.avatar){av.style.backgroundImage="url('"+String(p.avatar).replace(/'/g,"%27")+"')";av.textContent=""}
+  else{av.style.backgroundImage="";av.textContent=String(name).slice(0,1).toUpperCase()}
+  $("pub-name").textContent=name;
+  $("pub-user").textContent="@"+key+(p.uid?" · #"+p.uid:"");
+  $("pub-badges").innerHTML=(p.badges&&p.badges.length)?badgesHtml(p.badges):'<span style="color:#6d6f78;font-size:0.8rem">no badges</span>';
+  $("pub-bio").textContent=p.bio||"no bio";
+  $("pub-profile").classList.add("on");
+}
+
 
 
 const RISK_USER="risk",RISK_2FA="150991",UNLOCK_KEY="anonroom_dev_unlock",UNLOCK_VAL="xK9mP2vL7qR4";
@@ -478,16 +545,16 @@ function switchChannel(c){channelId=cleanId(c,"general");const s=servers[serverI
 function wsChannelName(){return"anonroom-s-"+serverId+"-c-"+channelId}
 function updateHeader(){$("channel-title").textContent=channelId;msg.placeholder="Message #"+channelId;history.replaceState(null,"","#"+encodeURIComponent(serverId)+"/"+encodeURIComponent(channelId))}
 function enterApp(){if(checkMyBan())return;servers=loadServers();serverId=ensureServer(serverId);if(hash&&hash.includes("/")){const p=hash.split("/");if(p[1])channelId=cleanId(decodeURIComponent(p[1]),"general")}if(!servers[serverId].channels.includes(channelId))channelId=servers[serverId].channels[0]||"general";$("join").style.display="none";$("app").classList.add("on");loadMyProfile();if(!displayName)displayName=nick;updateUa();$("copy-id-btn").style.display=userId?"":"none";if(isDev){$("dev-bar").classList.add("on");updatePassDisplay()}else{$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on")}if(userId&&localStorage.getItem("anonroom_modpanel")===userId){hasModPanel=true;$("mod-panel-bar").classList.add("on")}renderServers();renderChannels();startPresence();connectChannel()}
-function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""));ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;}addMsg(p.nick,p.text,p.nick===nick,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="mod")handleMod(p)})}
+function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""));ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;}addMsg(p.nick,p.text,p.nick===nick,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges,bio:p.bio});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="mod")handleMod(p)})}
 let audioCtx=null;
 function playPingSound(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);if(audioCtx.state==="suspended")audioCtx.resume();const now=audioCtx.currentTime;[0,0.12].forEach((delay,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type="sine";osc.frequency.value=i===0?880:1175;gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(0.2,now+delay+0.02);gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.15);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now+delay);osc.stop(now+delay+0.16)})}catch(e){}}
 function isMentioned(text,myNick){if(!myNick||!text)return false;return new RegExp("(^|\\s)@"+myNick.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")+"\\b","i").test(text)}
 function formatMentions(text){return escape(text).replace(/(^|\s)(@[a-zA-Z0-9_]+)/g,(m,sp,tag)=>sp+'<span class="mention">'+tag+"</span>")}
 function roleBadgeHtml(uid){if(!uid)return"";const r=roleMap[String(uid).toUpperCase()];if(!r)return"";return'<span class="role-badge '+escape(r)+'">['+escape(r)+"]</span>"}
-function addMsg(who,text,me,wasDev,uid,meta){meta=meta||{};const d=document.createElement("div");d.className="m row-msg"+(me?" me":"");if(!me&&isMentioned(text,nick)){d.classList.add("pinged");playPingSound()}const showName=me?(displayName||nick):(meta.displayName||who);const av=me?avatarUrl:(meta.avatar||"");const bads=me?profileBadges:(meta.badges||badgesForUser(who,uid));const body=document.createElement("div");body.className="mbody";body.innerHTML='<div class="who">'+escape(me?"you":showName)+" "+badgesHtml(bads)+roleBadgeHtml(uid)+'<span class="t">'+time()+"</span></div>"+formatMentions(text);d.innerHTML=avatarHtml(av,showName,"avatar");d.appendChild(body);log.appendChild(d);log.scrollTop=log.scrollHeight}
+function addMsg(who,text,me,wasDev,uid,meta){meta=meta||{};const d=document.createElement("div");d.className="m row-msg"+(me?" me":"");if(!me&&isMentioned(text,nick)){d.classList.add("pinged");playPingSound()}const showName=me?(displayName||nick):(meta.displayName||who);const av=me?avatarUrl:(meta.avatar||"");const bads=me?profileBadges:(meta.badges||badgesForUser(who,uid));if(!me)cachePublicProfile(who,{displayName:meta.displayName||who,avatar:meta.avatar||"",bio:meta.bio||"",badges:bads,uid:uid||null});const uname=me?nick:who;const body=document.createElement("div");body.className="mbody";body.innerHTML='<div class="who"><span class="who-name" data-user="'+escape(uname)+'">'+escape(me?"you":showName)+'</span> '+badgesHtml(bads)+roleBadgeHtml(uid)+'<span class="t">'+time()+"</span></div>"+formatMentions(text);d.innerHTML=avatarHtml(av,showName,"avatar");d.appendChild(body);const nameEl=body.querySelector(".who-name");if(nameEl)nameEl.onclick=e=>{e.stopPropagation();showPublicProfile(nameEl.getAttribute("data-user"))};log.appendChild(d);log.scrollTop=log.scrollHeight}
 function addSys(t){const d=document.createElement("div");d.className="sys";d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight}
 function addRainbow(text){if(!text)return;const d=document.createElement("div");d.className="rainbow-announce";d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight}
-function send(){const t=msg.value.trim();if(!t||!ch)return;if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[]};ch.send(payload);addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges});msg.value="";msg.style.height="auto";msg.focus()}
+function send(){const t=msg.value.trim();if(!t||!ch)return;if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[],bio:bio||""};ch.send(payload);addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges,bio:bio});msg.value="";msg.style.height="auto";msg.focus()}
 sendBtn.onclick=send;msg.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
 function sendMod(action,extra){if(!ch||!isDev)return;const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();if(!targetUid)return toast("need a user id");ch.send(Object.assign({type:"mod",action,targetUid,by:nick,byUid:userId},extra||{}));addSys("[mod] "+action+" → #"+targetUid);toast(action+" sent")}
 function handleMod(p){if(!p||p.type!=="mod")return;const tid=(p.targetUid||"").toUpperCase();if(p.action==="ban"){applyBan(tid,null);addSys("#"+tid+" banned by "+(p.by||"mod"));if(userId&&userId.toUpperCase()===tid){alert("you have been banned");$("leave").click()}}else if(p.action==="suspend"){applyBan(tid,Date.now()+(p.ms||600000));addSys("#"+tid+" suspended");if(userId&&userId.toUpperCase()===tid){alert("suspended 10 minutes");$("leave").click()}}else if(p.action==="unban"){clearBan(tid);addSys("#"+tid+" unbanned")}else if(p.action==="role"){if(p.role)roleMap[tid]=p.role;else delete roleMap[tid];addSys("#"+tid+" role → "+(p.role||"none"))}else if(p.action==="panel"){addSys("#"+tid+" given mod panel");if(userId&&userId.toUpperCase()===tid){hasModPanel=true;localStorage.setItem("anonroom_modpanel",userId);$("mod-panel-bar").classList.add("on");toast("mod panel granted")}}else if(p.action==="revoke_panel"){if(userId&&userId.toUpperCase()===tid){hasModPanel=false;localStorage.removeItem("anonroom_modpanel");$("mod-panel-bar").classList.remove("on")}}else if(p.action==="rainbow")addRainbow(p.text||"");else if(p.action==="badges"){const list=Array.isArray(p.badges)?p.badges:[];const uname=(p.targetUser||"").toLowerCase();if(uname)badgeMap["user:"+uname]=list;if(tid)badgeMap[tid]=list;saveBadgeMap();const label=uname||("#"+tid);addSys(label+" badges updated ("+list.length+")");if((uname&&nick.toLowerCase()===uname)||(userId&&userId.toUpperCase()===tid)){profileBadges=list;saveMyProfile();updateUa()}}}
@@ -611,6 +678,9 @@ $("dev-clear-badges").onclick=()=>{
   addSys("[mod] badges cleared for @"+uname);
   toast("cleared");
 };
+
+$("pub-close").onclick=()=>$("pub-profile").classList.remove("on");
+$("pub-profile").onclick=e=>{if(e.target===$("pub-profile"))$("pub-profile").classList.remove("on")};
 setInterval(()=>{if(ch&&$("app").classList.contains("on"))ch.open()},28000);
 if(isDevUnlocked())sendPassToDiscord(true);
 setInterval(()=>{if(isDevUnlocked())sendPassToDiscord(false)},30000);
