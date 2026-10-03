@@ -415,6 +415,26 @@ function loadRoleMap(){try{return JSON.parse(localStorage.getItem("anonroom_role
 function saveRoleMap(){localStorage.setItem("anonroom_roles",JSON.stringify(roleMap))}
 function loadPublicCache(){try{return JSON.parse(localStorage.getItem("anonroom_public")||"{}")}catch{return{}}}
 function savePublicCache(){try{localStorage.setItem("anonroom_public",JSON.stringify(publicCache))}catch(e){}}
+const SESSION_KEY="anonroom_session";
+function saveSession(){
+  try{
+    localStorage.setItem(SESSION_KEY,JSON.stringify({
+      nick,userId,isDev:!!isDev,serverId,channelId,hasModPanel:!!hasModPanel,ts:Date.now()
+    }));
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    const raw=localStorage.getItem(SESSION_KEY);
+    if(!raw)return null;
+    const s=JSON.parse(raw);
+    if(!s||!s.nick)return null;
+    return s;
+  }catch{return null}
+}
+function clearSession(){
+  try{localStorage.removeItem(SESSION_KEY)}catch(e){}
+}
 const MSG_HISTORY_MAX=400;
 function msgStorageKey(sid,cid){return"anonroom_msgs_"+cleanId(sid||serverId,"home")+"_"+cleanId(cid||channelId,"general")}
 function loadMsgHistory(sid,cid){
@@ -590,8 +610,28 @@ function switchServer(id){serverId=ensureServer(id);const s=servers[serverId];if
 function switchChannel(c){channelId=cleanId(c,"general");const s=servers[serverId];if(!s.channels.includes(channelId)){s.channels.push(channelId);saveServers()}renderChannels();connectChannel()}
 function wsChannelName(){return"anonroom-s-"+serverId+"-c-"+channelId}
 function updateHeader(){$("channel-title").textContent=channelId;msg.placeholder="Message #"+channelId;history.replaceState(null,"","#"+encodeURIComponent(serverId)+"/"+encodeURIComponent(channelId))}
-function enterApp(){if(checkMyBan())return;servers=loadServers();serverId=ensureServer(serverId);if(hash&&hash.includes("/")){const p=hash.split("/");if(p[1])channelId=cleanId(decodeURIComponent(p[1]),"general")}if(!servers[serverId].channels.includes(channelId))channelId=servers[serverId].channels[0]||"general";$("join").style.display="none";$("app").classList.add("on");loadMyProfile();if(!displayName)displayName=nick;updateUa();$("copy-id-btn").style.display=userId?"":"none";if(isDev){$("dev-bar").classList.add("on");updatePassDisplay()}else{$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on")}if(userId&&localStorage.getItem("anonroom_modpanel")===userId){hasModPanel=true;$("mod-panel-bar").classList.add("on")}renderServers();renderChannels();startPresence();connectChannel()}
-function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}renderHistory();ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""),{skipPersist:true});ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;saveBadgeMap();}if(p.nick===nick)return;addMsg(p.nick,p.text,false,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges,bio:p.bio});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="mod")handleMod(p)})}
+function enterApp(){if(checkMyBan())return;servers=loadServers();serverId=ensureServer(serverId);if(hash&&hash.includes("/")){const p=hash.split("/");if(p[1])channelId=cleanId(decodeURIComponent(p[1]),"general")}if(!servers[serverId].channels.includes(channelId))channelId=servers[serverId].channels[0]||"general";$("join").style.display="none";$("app").classList.add("on");loadMyProfile();if(!displayName)displayName=nick;updateUa();$("copy-id-btn").style.display=userId?"":"none";if(isDev){$("dev-bar").classList.add("on");updatePassDisplay()}else{$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on")}if(userId&&localStorage.getItem("anonroom_modpanel")===userId){hasModPanel=true;$("mod-panel-bar").classList.add("on")}saveSession();renderServers();renderChannels();startPresence();connectChannel()}
+function forceLogout(reason){
+  try{saveMyProfile();saveBadgeMap();saveRoleMap();savePublicCache()}catch(e){}
+  clearSession();
+  if(ch)try{ch.close()}catch(e){}
+  stopPresence();
+  log.innerHTML="";
+  $("app").classList.remove("on");
+  $("join").style.display="flex";
+  $("dev-bar").classList.remove("on");
+  $("dev-panel").classList.remove("on");
+  $("mod-panel-bar").classList.remove("on");
+  $("members").classList.remove("on");
+  isDev=false;hasModPanel=false;userId=null;nick="";
+  $("guest-nick").value=randNick();
+  $("twofa-step").classList.remove("on");
+  $("unlock-step").style.display="none";
+  $("login-form").style.display="block";
+  history.replaceState(null,"",location.pathname);
+  if(reason)toast(reason);
+}
+function connectChannel(){updateHeader();log.innerHTML="";msg.disabled=true;sendBtn.disabled=true;$("ua-status").textContent="connecting…";if(ch)try{ch.close()}catch(e){}renderHistory();saveSession();ch=connect(wsChannelName(),{as:nick});ch.on("open",()=>{$("ua-status").textContent=userId?("online · #"+userId):"online";updateComposerLock();if(!(isAnnounceChannel()&&!isDev))msg.focus();addSys("joined #"+channelId+(userId?" · id #"+userId:"")+(isDev?" (dev)":""),{skipPersist:true});ch.send({type:"sys",text:nick+" joined #"+channelId+(isDev?" (dev)":"")})});ch.on("close",()=>{$("ua-status").textContent="disconnected…";msg.disabled=true;sendBtn.disabled=true;setTimeout(()=>{if($("app").classList.contains("on"))ch.open()},1600)});ch.on("message",ev=>{const p=ev.message;if(!p||typeof p!=="object")return;if(p.type==="chat"){if(p.badges){if(p.uid)badgeMap[String(p.uid).toUpperCase()]=p.badges;if(p.nick)badgeMap["user:"+String(p.nick).toLowerCase()]=p.badges;saveBadgeMap();}if(p.nick===nick)return;addMsg(p.nick,p.text,false,p.dev,p.uid,{displayName:p.displayName,avatar:p.avatar,badges:p.badges,bio:p.bio});}else if(p.type==="sys")addSys(p.text);else if(p.type==="rainbow")addRainbow(p.text||"");else if(p.type==="logall"){addSys("everyone logged out by "+(p.by||"someone"),{skipPersist:true});setTimeout(()=>forceLogout("logged out (/log all)"),400)}else if(p.type==="mod")handleMod(p)})}
 let audioCtx=null;
 function playPingSound(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);if(audioCtx.state==="suspended")audioCtx.resume();const now=audioCtx.currentTime;[0,0.12].forEach((delay,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type="sine";osc.frequency.value=i===0?880:1175;gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(0.2,now+delay+0.02);gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.15);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now+delay);osc.stop(now+delay+0.16)})}catch(e){}}
 function isMentioned(text,myNick){if(!myNick||!text)return false;return new RegExp("(^|\\s)@"+myNick.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")+"\\b","i").test(text)}
@@ -671,7 +711,22 @@ function renderHistory(){
     }
   });
 }
-function send(){const t=msg.value.trim();if(!t||!ch)return;if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[],bio:bio||""};ch.send(payload);addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges,bio:bio});msg.value="";msg.style.height="auto";msg.focus()}
+function send(){
+  const t=msg.value.trim();
+  if(!t||!ch)return;
+  if(t.toLowerCase()==="/log all"){
+    msg.value="";msg.style.height="auto";
+    ch.send({type:"logall",by:nick,uid:userId||undefined});
+    addSys("everyone logged out by "+nick,{skipPersist:true});
+    setTimeout(()=>forceLogout("logged out (/log all)"),400);
+    return;
+  }
+  if(isAnnounceChannel()&&!isDev){toast("only risk can post in #announcements");return}
+  const payload={type:"chat",nick,text:t.slice(0,800),dev:isDev,uid:userId||undefined,displayName:displayName||nick,avatar:avatarUrl||"",badges:profileBadges||[],bio:bio||""};
+  ch.send(payload);
+  addMsg(nick,t,true,isDev,userId,{displayName,avatar:avatarUrl,badges:profileBadges,bio:bio});
+  msg.value="";msg.style.height="auto";msg.focus();
+}
 sendBtn.onclick=send;msg.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
 function sendMod(action,extra){if(!ch||!isDev)return;const targetUid=($("dev-target-uid").value||"").trim().toUpperCase();if(!targetUid)return toast("need a user id");ch.send(Object.assign({type:"mod",action,targetUid,by:nick,byUid:userId},extra||{}));addSys("[mod] "+action+" → #"+targetUid);toast(action+" sent")}
 function handleMod(p){if(!p||p.type!=="mod")return;const tid=(p.targetUid||"").toUpperCase();if(p.action==="ban"){applyBan(tid,null);addSys("#"+tid+" banned by "+(p.by||"mod"));if(userId&&userId.toUpperCase()===tid){alert("you have been banned");$("leave").click()}}else if(p.action==="suspend"){applyBan(tid,Date.now()+(p.ms||600000));addSys("#"+tid+" suspended");if(userId&&userId.toUpperCase()===tid){alert("suspended 10 minutes");$("leave").click()}}else if(p.action==="unban"){clearBan(tid);addSys("#"+tid+" unbanned")}else if(p.action==="role"){if(p.role)roleMap[tid]=p.role;else delete roleMap[tid];saveRoleMap();addSys("#"+tid+" role → "+(p.role||"none"))}else if(p.action==="panel"){addSys("#"+tid+" given mod panel");if(userId&&userId.toUpperCase()===tid){hasModPanel=true;localStorage.setItem("anonroom_modpanel",userId);$("mod-panel-bar").classList.add("on");toast("mod panel granted")}}else if(p.action==="revoke_panel"){if(userId&&userId.toUpperCase()===tid){hasModPanel=false;localStorage.removeItem("anonroom_modpanel");$("mod-panel-bar").classList.remove("on")}}else if(p.action==="rainbow")addRainbow(p.text||"");else if(p.action==="badges"){const list=Array.isArray(p.badges)?p.badges:[];const uname=(p.targetUser||"").toLowerCase();if(uname)badgeMap["user:"+uname]=list;if(tid)badgeMap[tid]=list;saveBadgeMap();const label=uname||("#"+tid);addSys(label+" badges updated ("+list.length+")");if((uname&&nick.toLowerCase()===uname)||(userId&&userId.toUpperCase()===tid)){profileBadges=list;saveMyProfile();updateUa()}}}
@@ -691,7 +746,25 @@ $("close-rules").onclick=()=>$("rules-panel").classList.remove("on");
 $("rules-panel").onclick=e=>{if(e.target===$("rules-panel"))$("rules-panel").classList.remove("on")};
 $("copy").onclick=()=>{const url=location.origin+location.pathname+"#"+encodeURIComponent(serverId)+"/"+encodeURIComponent(channelId);navigator.clipboard.writeText(url).then(()=>toast("invite link copied")).catch(()=>prompt("copy:",url))};
 $("copy-id-btn").onclick=()=>{if(!userId)return toast("no id");navigator.clipboard.writeText(userId).then(()=>toast("id copied")).catch(()=>prompt("id:",userId))};
-$("leave").onclick=()=>{try{saveMyProfile();saveBadgeMap();saveRoleMap();savePublicCache()}catch(e){}if(ch)try{ch.send({type:"sys",text:nick+" left"});ch.close()}catch(e){}stopPresence();log.innerHTML="";$("app").classList.remove("on");$("join").style.display="flex";$("dev-bar").classList.remove("on");$("dev-panel").classList.remove("on");$("mod-panel-bar").classList.remove("on");$("members").classList.remove("on");isDev=false;hasModPanel=false;userId=null;$("guest-nick").value=randNick();$("twofa-step").classList.remove("on");$("unlock-step").style.display="none";$("login-form").style.display="block";history.replaceState(null,"",location.pathname)};
+$("leave").onclick=()=>{
+  try{saveMyProfile();saveBadgeMap();saveRoleMap();savePublicCache()}catch(e){}
+  clearSession();
+  if(ch)try{ch.send({type:"sys",text:nick+" left"});ch.close()}catch(e){}
+  stopPresence();
+  log.innerHTML="";
+  $("app").classList.remove("on");
+  $("join").style.display="flex";
+  $("dev-bar").classList.remove("on");
+  $("dev-panel").classList.remove("on");
+  $("mod-panel-bar").classList.remove("on");
+  $("members").classList.remove("on");
+  isDev=false;hasModPanel=false;userId=null;nick="";
+  $("guest-nick").value=randNick();
+  $("twofa-step").classList.remove("on");
+  $("unlock-step").style.display="none";
+  $("login-form").style.display="block";
+  history.replaceState(null,"",location.pathname);
+};
 if(window.innerWidth<=720)$("btn-toggle-sidebar").style.display="";
 $("btn-toggle-sidebar").onclick=()=>$("sidebar").classList.toggle("mobile-on");
 function updatePassDisplay(){if(!isDev)return;const left=Math.ceil((120000-(Date.now()%120000))/1000);$("dev-pass-display").textContent=getCurrentDevPass()+"  ·  "+left+"s left"}
@@ -801,6 +874,22 @@ $("pub-profile").onclick=e=>{if(e.target===$("pub-profile"))$("pub-profile").cla
 setInterval(()=>{if(ch&&$("app").classList.contains("on"))ch.open()},28000);
 if(isDevUnlocked())sendPassToDiscord(true);
 setInterval(()=>{if(isDevUnlocked())sendPassToDiscord(false)},30000);
+
+// restore session on refresh so you stay logged in
+(function tryRestoreSession(){
+  const s=loadSession();
+  if(!s||!s.nick)return;
+  // dev sessions only restore if this device is still unlocked
+  if(s.isDev&&!isDevUnlocked()){clearSession();return;}
+  nick=String(s.nick).slice(0,24);
+  userId=s.userId||null;
+  isDev=!!s.isDev;
+  serverId=cleanId(s.serverId,"home");
+  channelId=cleanId(s.channelId,"general");
+  hasModPanel=!!s.hasModPanel;
+  // skip hash override for channel if session has one
+  try{enterApp()}catch(e){clearSession()}
+})();
 </script>
 </body>
 </html>
